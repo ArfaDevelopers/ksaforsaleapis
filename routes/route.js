@@ -5,9 +5,11 @@ const axios = require("axios");
 require("dotenv").config();
 
 // Twilio Credentials (Ensure these are securely stored, not hardcoded)
-const TWILIO_SERVICE_SID = process.env.TWILIO_SERVICE_SID;
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+// const TWILIO_SERVICE_SID = process.env.TWILIO_SERVICE_SID;
+const TWILIO_SERVICE_SID = "VA51beac2a0c74d6cb4c150799d00ee491";
+
+const TWILIO_ACCOUNT_SID = "AC10ecc49693f7d3f967529681877e661f";
+const TWILIO_AUTH_TOKEN = "b1b5ec56e8255b53aeb5d7a0e4c5ff8b";
 
 // Fetch all cars from Firestore
 router.get("/cars", async (_, res) => {
