@@ -2,10 +2,19 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const compression = require("compression");
+const socketIo = require("socket.io");
+const http = require("http");
+const { db } = require("./firebase/config"); // Firebase Firestore configuration
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+  },
+});
 
 app.use(cors());
 app.use(express.json());
@@ -16,6 +25,298 @@ app.get("/", (_, res) => {
 });
 
 app.use("/route", require("./routes/route")); // Includes Twilio OTP + Firestore Cars
+const getOrCreateChat = async (sender, receiver) => {
+  try {
+    const chatRef = db.collection("chats");
+    const existingChatSnapshot = await chatRef
+      .where("participants", "array-contains", sender)
+      .get();
+
+    let chatDoc = null;
+
+    existingChatSnapshot.forEach((doc) => {
+      const chatData = doc.data();
+      if (chatData.participants.includes(receiver)) {
+        chatDoc = { id: doc.id, ...chatData };
+      }
+    });
+
+    if (!chatDoc) {
+      const newChatRef = await chatRef.add({
+        participants: [sender, receiver],
+        latestMessage: "",
+        updated_at: new Date(),
+      });
+
+      chatDoc = { id: newChatRef.id };
+    }
+
+    return chatDoc;
+  } catch (error) {
+    console.error("Error getting/creating chat:", error);
+  }
+};
+// app.get("/api/getmessages", async (req, res) => {
+//   try {
+//     const { userId, receiverId } = req.query;
+
+//     if (!userId || !receiverId) {
+//       return res.status(400).json({ error: "Missing userId or receiverId" });
+//     }
+
+//     const messagesRef = db.collection("messages");
+
+//     // Fetch messages where `userId` is either sender or receiver
+//     const senderQuerySnapshot = await messagesRef
+//       .where("sender", "==", userId)
+//       .get();
+//     const receiverQuerySnapshot = await messagesRef
+//       .where("receiver", "==", userId)
+//       .get();
+
+//     // Combine messages from both queries
+//     const messages = [
+//       ...senderQuerySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+//       ...receiverQuerySnapshot.docs.map((doc) => ({
+//         id: doc.id,
+//         ...doc.data(),
+//       })),
+//     ];
+
+//     // Filter messages between userId and receiverId
+//     const filteredMessages = messages.filter(
+//       (msg) =>
+//         (msg.sender === userId && msg.receiver === receiverId) ||
+//         (msg.sender === receiverId && msg.receiver === userId)
+//     );
+
+//     // Sort messages by created_at
+//     filteredMessages.sort((a, b) => a.created_at - b.created_at);
+
+//     return res.status(200).json({ messages: filteredMessages });
+//   } catch (error) {
+//     console.error("Error fetching messages:", error.message);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+app.get("/api/getmessages", async (req, res) => {
+  try {
+    const { userId, receiverId } = req.query;
+
+    if (!userId || !receiverId) {
+      return res.status(400).json({ error: "Missing userId or receiverId" });
+    }
+
+    const messagesRef = db.collection("messages");
+
+    const senderQuerySnapshot = await messagesRef
+      .where("sender", "==", userId)
+      .get();
+    const receiverQuerySnapshot = await messagesRef
+      .where("receiver", "==", userId)
+      .get();
+
+    const messages = [
+      ...senderQuerySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+      ...receiverQuerySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })),
+    ];
+
+    const filteredMessages = messages.filter(
+      (msg) =>
+        (msg.sender === userId && msg.receiver === receiverId) ||
+        (msg.sender === receiverId && msg.receiver === userId)
+    );
+
+    filteredMessages.sort((a, b) => a.created_at - b.created_at);
+
+    return res.status(200).json({ messages: filteredMessages });
+  } catch (error) {
+    console.error("Error fetching messages:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ** Listen to Firestore Database Changes and Emit Real-time Updates **
+const messagesRef = db.collection("messages");
+messagesRef.onSnapshot((snapshot) => {
+  snapshot.docChanges().forEach((change) => {
+    if (change.type === "added" || change.type === "modified") {
+      io.emit("newMessage", { id: change.doc.id, ...change.doc.data() });
+    }
+  });
+});
+
+app.post("/api/messages", async (req, res) => {
+  try {
+    const { content, sender, receiver, from } = req.body;
+
+    if (!content || !sender || !receiver) {
+      return res
+        .status(400)
+        .json({ error: "Invalid message content or sender/receiver ID" });
+    }
+
+    // Get or create chat
+    const chat = await getOrCreateChat(sender, receiver);
+
+    const messageData = {
+      sender,
+      receiver,
+      chat_id: chat.id,
+      content,
+      from,
+      created_at: new Date(),
+    };
+
+    // Save message to Firestore
+    await db.collection("messages").add(messageData);
+
+    // Update latest message in chat
+    await db.collection("chats").doc(chat.id).update({
+      latestMessage: content,
+      updated_at: new Date(),
+      from,
+    });
+
+    // Emit the message in real-time using WebSockets
+    io.emit("message", messageData);
+
+    return res.status(201).json({
+      success: true,
+      message: "Message sent successfully",
+      data: messageData,
+    });
+  } catch (error) {
+    console.error("Error handling message:", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+});
+app.get("/api/messages/:chatId", async (req, res) => {
+  try {
+    const { chatId } = req.params;
+
+    // Fetch messages using chat_id
+    const messagesRef = db.collection("messages");
+    const querySnapshot = await messagesRef
+      .where("chat_id", "==", chatId)
+      .orderBy("created_at", "asc") // Sort messages in order
+      .get();
+
+    if (querySnapshot.empty) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const messages = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return res.json({ success: true, data: messages });
+  } catch (error) {
+    console.error("Error fetching messages:", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+});
+app.get("/api/chat-id/:user1/:user2", async (req, res) => {
+  try {
+    const { user1, user2 } = req.params;
+    const messagesRef = db.collection("messages");
+
+    // Find chat_id where sender & receiver match (in any order)
+    const querySnapshot = await messagesRef
+      .where("sender", "in", [user1, user2])
+      .where("receiver", "in", [user1, user2])
+      .limit(1) // Get only one matching chat_id
+      .get();
+
+    if (querySnapshot.empty) {
+      return res.json({ success: false, message: "No chat found" });
+    }
+
+    const chatId = querySnapshot.docs[0].data().chat_id;
+    return res.json({ success: true, chatId });
+  } catch (error) {
+    console.error("Error fetching chat_id:", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// app.get("/api/messages/:sender/:receiver", async (req, res) => {
+//   try {
+//     const { sender, receiver } = req.params;
+
+//     // Fetch messages where sender & receiver match OR vice versa
+//     const messagesRef = db.collection("messages");
+//     const querySnapshot = await messagesRef
+//       .where("chat_id", "==", getChatId(sender, receiver)) // Ensures chat_id is used
+//       .orderBy("created_at", "asc") // Sort messages in order
+//       .get();
+
+//     if (querySnapshot.empty) {
+//       return res.json({ success: true, data: [] });
+//     }
+
+//     const messages = querySnapshot.docs.map((doc) => ({
+//       id: doc.id,
+//       ...doc.data(),
+//     }));
+
+//     return res.json({ success: true, data: messages });
+//   } catch (error) {
+//     console.error("Error fetching messages:", error.message);
+//     return res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // Helper function to generate chat_id consistently
+// function getChatId(user1, user2) {
+//   return [user1, user2].sort().join("_");
+// }
+
+// Socket.io connection
+io.on("connection", (socket) => {
+  console.log("A user connected", socket.id);
+
+  socket.on("message", async ({ content, sender, receiver, from }) => {
+    try {
+      if (!content || !sender || !receiver)
+        throw new Error("Invalid message content or sender/receiver ID");
+
+      const chat = await getOrCreateChat(sender, receiver);
+
+      const messageData = {
+        sender,
+        receiver,
+        chat_id: chat.id,
+        content,
+        from,
+        created_at: new Date(),
+      };
+
+      // Save message to Firestore
+      await db.collection("messages").add(messageData);
+
+      // Update latest message in chat
+      await db.collection("chats").doc(chat.id).update({
+        latestMessage: content,
+        updated_at: new Date(),
+        from,
+      });
+
+      // Emit the message in real-time
+      socket.broadcast.emit("message", messageData);
+    } catch (error) {
+      console.error("Error handling message:", error.message);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
+});
 
 const PORT = process.env.PORT || 9002;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
