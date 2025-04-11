@@ -26,6 +26,8 @@ const TWILIO_ACCOUNT_SID = "AC1889f1661cd9d55526ddbf75143ca9a2";
 const TWILIO_AUTH_TOKEN = "3646885bb5e2f2adb574680251d84de5";
 // Generate Access Token for User
 const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+const TWILIO_PHONE_NUMBER = "+12013895347"; // Your Twilio number
+
 require("dotenv").config();
 
 app.use(express.json()); // Add this line
@@ -118,6 +120,26 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected");
   });
+});
+app.post("/call", async (req, res) => {
+  const { to } = req.body;
+
+  if (!to) {
+    return res.status(400).json({ error: "Phone number is required" });
+  }
+
+  try {
+    const call = await client.calls.create({
+      url: "http://demo.twilio.com/docs/voice.xml", // Twilio XML for call handling
+      to,
+      from: TWILIO_PHONE_NUMBER,
+    });
+
+    res.status(200).json({ message: "Call initiated", callSid: call.sid });
+  } catch (error) {
+    console.error("Twilio Call Error:", error);
+    res.status(500).json({ error: "Failed to make a call" });
+  }
 });
 
 // Get all users
