@@ -3,8 +3,14 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const compression = require("compression");
 const socketIo = require("socket.io");
+const bodyParser = require("body-parser");
+
 const http = require("http");
 const { db } = require("./firebase/config"); // Firebase Firestore configuration
+const twilio = require("twilio");
+const stripe = require("stripe")(
+  "sk_test_51Oqyo3Ap5li0mnBdPp3VP8q3NWQGnkM2CqvQkF6VV6GRPB0JdbNAX1UGIhjdlZghTj0MGg5GzRI5pHp5clQa9wAO005TR3ezz8"
+); // Replace with your secret key
 
 dotenv.config();
 
@@ -16,7 +22,19 @@ const io = socketIo(server, {
   },
 });
 
+const TWILIO_SERVICE_SID = "VA11fde75371f7e79949bcf4c1e6cb8fef";
+
+const TWILIO_ACCOUNT_SID = "AC1889f1661cd9d55526ddbf75143ca9a2";
+const TWILIO_AUTH_TOKEN = "3646885bb5e2f2adb574680251d84de5";
+// Generate Access Token for User
+const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+const TWILIO_PHONE_NUMBER = "+12013895347"; // Your Twilio number
 app.use(cors());
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  next();
+});
 app.use(express.json());
 app.use(compression());
 
@@ -56,6 +74,82 @@ const getOrCreateChat = async (sender, receiver) => {
     console.error("Error getting/creating chat:", error);
   }
 };
+app.post("/api/charge", async (req, res) => {
+  try {
+    const { paymentMethodId } = req.body;
+
+    // Create a PaymentIntent with the received payment method ID
+    // const paymentIntent = await stripe.paymentIntents.create({
+    //   amount: 1000, // Amount in cents ($10)
+    //   currency: "usd",
+    //   payment_method: paymentMethodId,
+    //   confirm: true, // Automatically confirm the payment
+    // });
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: 1000, // Amount in cents ($10)
+      currency: "usd",
+      payment_method: paymentMethodId,
+      confirm: true,
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: "never", // Disallow redirects for payment methods
+      },
+    });
+
+    // Send the payment result to the frontend
+    res.status(200).json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (error) {
+    console.error("Error during payment processing:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+app.get("/api/collection-counts", async (req, res) => {
+  try {
+    const collections = [
+      "Cars",
+      "users",
+
+      "CommercialAdscom",
+      "ELECTRONICS",
+      "Education",
+      "FASHION",
+      "HEALTHCARE",
+      "JOBBOARD",
+      "REALESTATECOMP",
+      "RealEstate",
+      "SPORTSGAMESComp",
+      "SliderImage",
+    ];
+
+    const counts = {};
+
+    // Use Promise.all to fetch all counts in parallel
+    await Promise.all(
+      collections.map(async (collectionName) => {
+        const snapshot = await db.collection(collectionName).get();
+        counts[collectionName] = snapshot.size;
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: counts,
+    });
+  } catch (error) {
+    console.error("Error fetching collection counts:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch collection counts",
+    });
+  }
+});
+
 // app.get("/api/getmessages", async (req, res) => {
 //   try {
 //     const { userId, receiverId } = req.query;
@@ -138,6 +232,35 @@ app.get("/api/getmessages", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+app.get("/api/getusermessage", async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId" });
+    }
+
+    const messagesRef = db.collection("messages");
+
+    // Fetch messages where the sender is the user
+    const senderQuerySnapshot = await messagesRef
+      .where("sender", "==", userId)
+      .get();
+
+    const messages = senderQuerySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Sort messages by created_at timestamp
+    messages.sort((a, b) => a.created_at - b.created_at);
+
+    return res.status(200).json({ messages });
+  } catch (error) {
+    console.error("Error fetching messages:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // ** Listen to Firestore Database Changes and Emit Real-time Updates **
 const messagesRef = db.collection("messages");
@@ -148,7 +271,26 @@ messagesRef.onSnapshot((snapshot) => {
     }
   });
 });
+app.post("/api/call", async (req, res) => {
+  const { to } = req.body;
 
+  if (!to) {
+    return res.status(400).json({ error: "Phone number is required" });
+  }
+
+  try {
+    const call = await client.calls.create({
+      url: "http://demo.twilio.com/docs/voice.xml", // Twilio XML for call handling
+      to,
+      from: TWILIO_PHONE_NUMBER,
+    });
+
+    res.status(200).json({ message: "Call initiated", callSid: call.sid });
+  } catch (error) {
+    console.error("Twilio Call Error:", error);
+    res.status(500).json({ error: "Failed to make a call" });
+  }
+});
 app.post("/api/messages", async (req, res) => {
   try {
     const { content, sender, receiver, from } = req.body;
@@ -317,7 +459,18 @@ io.on("connection", (socket) => {
     console.log("User disconnected");
   });
 });
-
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "x-access-token, Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next(createError(404));
+});
 const PORT = process.env.PORT || 9002;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 
