@@ -109,12 +109,13 @@ app.post("/api/charge", async (req, res) => {
     });
   }
 });
-app.get("/api/collection-counts", async (req, res) => {
+app.post("/api/collection-counts", async (req, res) => {
   try {
+    const { name, userId, productId, amount, paymentStatus } = req.body;
+
     const collections = [
       "Cars",
       "users",
-
       "CommercialAdscom",
       "ELECTRONICS",
       "Education",
@@ -129,7 +130,7 @@ app.get("/api/collection-counts", async (req, res) => {
 
     const counts = {};
 
-    // Use Promise.all to fetch all counts in parallel
+    // Get counts for all collections
     await Promise.all(
       collections.map(async (collectionName) => {
         const snapshot = await db.collection(collectionName).get();
@@ -137,15 +138,30 @@ app.get("/api/collection-counts", async (req, res) => {
       })
     );
 
+    // If payment was successful, store the data
+    if (paymentStatus === "success") {
+      await db.collection("Payments").add({
+        name,
+        userId,
+        productId,
+        amount,
+        paymentStatus,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     res.status(200).json({
       success: true,
       data: counts,
+      ...(paymentStatus === "success" && {
+        message: "Payment data saved successfully.",
+      }),
     });
   } catch (error) {
-    console.error("Error fetching collection counts:", error);
+    console.error("Error in /api/collection-counts:", error);
     res.status(500).json({
       success: false,
-      error: "Failed to fetch collection counts",
+      error: "An error occurred while processing the request.",
     });
   }
 });
