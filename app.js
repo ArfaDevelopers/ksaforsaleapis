@@ -76,30 +76,41 @@ const getOrCreateChat = async (sender, receiver) => {
 };
 app.post("/api/charge", async (req, res) => {
   try {
-    const { paymentMethodId } = req.body;
+    const { name, userId, productId, amount, paymentStatus, paymentMethodId } =
+      req.body;
 
-    // Create a PaymentIntent with the received payment method ID
-    // const paymentIntent = await stripe.paymentIntents.create({
-    //   amount: 1000, // Amount in cents ($10)
-    //   currency: "usd",
-    //   payment_method: paymentMethodId,
-    //   confirm: true, // Automatically confirm the payment
-    // });
+    // Create a PaymentIntent with Stripe
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 1000, // Amount in cents ($10)
+      amount: amount * 100, // Convert dollars to cents
       currency: "usd",
       payment_method: paymentMethodId,
       confirm: true,
       automatic_payment_methods: {
         enabled: true,
-        allow_redirects: "never", // Disallow redirects for payment methods
+        allow_redirects: "never",
       },
     });
 
-    // Send the payment result to the frontend
+    // If payment is successful, store the data in Firestore
+    if (paymentIntent.status === "succeeded") {
+      await db.collection("Payments").add({
+        name,
+        userId,
+        productId,
+        amount,
+        paymentStatus: paymentIntent.status,
+        paymentIntentId: paymentIntent.id,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
     res.status(200).json({
       success: true,
       clientSecret: paymentIntent.client_secret,
+      message:
+        paymentIntent.status === "succeeded"
+          ? "Payment successful and saved."
+          : "Payment initiated.",
     });
   } catch (error) {
     console.error("Error during payment processing:", error);
@@ -109,6 +120,7 @@ app.post("/api/charge", async (req, res) => {
     });
   }
 });
+
 app.post("/api/collection-counts", async (req, res) => {
   try {
     const { name, userId, productId, amount, paymentStatus } = req.body;
