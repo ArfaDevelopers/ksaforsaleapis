@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const compression = require("compression");
 const socketIo = require("socket.io");
 const bodyParser = require("body-parser");
+const createError = require("http-errors");
 
 const http = require("http");
 const { db } = require("./firebase/config"); // Firebase Firestore configuration
@@ -118,6 +119,45 @@ app.post("/api/charge", async (req, res) => {
       success: false,
       error: error.message,
     });
+  }
+});
+app.get("/api/user-data", async (req, res) => {
+  try {
+    const { userId, callingFrom } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId parameter" });
+    }
+
+    const collectionNames = [
+      "Cars",
+      "PETANIMALCOMP",
+      "SPORTSGAMESComp",
+      "REALESTATECOMP",
+      "TRAVEL",
+      "JOBBOARD",
+      "HEALTHCARE",
+      "FASHION",
+      "Education",
+      "ELECTRONICS",
+    ];
+
+    const allData = [];
+
+    for (const name of collectionNames) {
+      const snapshot = await db
+        .collection(name)
+        .where("userId", "==", userId)
+        .get();
+      snapshot.forEach((doc) => {
+        allData.push({ id: doc.id, ...doc.data() });
+      });
+    }
+
+    return res.status(200).json({ data: allData });
+  } catch (error) {
+    console.error("Error fetching user data:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
