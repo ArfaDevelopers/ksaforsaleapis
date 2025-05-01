@@ -100,36 +100,36 @@ app.get("/api/getAuthUserByUid", async (req, res) => {
   }
 });
 
-// app.get("/api/getAuthUsers", async (req, res) => {
-//   try {
-//     const users = [];
-//     let result;
+app.get("/api/getAuthUsers", async (req, res) => {
+  try {
+    const users = [];
+    let result;
 
-//     // Fetch users in batches (1000 users at a time)
-//     do {
-//       result = await admin
-//         .auth()
-//         .listUsers(1000, result ? result.pageToken : undefined);
-//       result.users.forEach((userRecord) => {
-//         users.push(userRecord.toJSON()); // Convert to JSON to get necessary details
-//       });
-//     } while (result.pageToken); // Keep fetching until all users are fetched
+    // Fetch users in batches (1000 users at a time)
+    do {
+      result = await admin
+        .auth()
+        .listUsers(1000, result ? result.pageToken : undefined);
+      result.users.forEach((userRecord) => {
+        users.push(userRecord.toJSON()); // Convert to JSON to get necessary details
+      });
+    } while (result.pageToken); // Keep fetching until all users are fetched
 
-//     console.log("All authenticated users:", users); // Log to the console
+    console.log("All authenticated users:", users); // Log to the console
 
-//     // Sending the users list to the frontend
-//     res.status(200).json({
-//       success: true,
-//       users: users,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching users from Firebase Authentication:", error);
-//     res.status(500).json({
-//       success: false,
-//       error: error.message,
-//     });
-//   }
-// });
+    // Sending the users list to the frontend
+    res.status(200).json({
+      success: true,
+      users: users,
+    });
+  } catch (error) {
+    console.error("Error fetching users from Firebase Authentication:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 app.post("/api/charge", async (req, res) => {
   try {
     const { name, userId, productId, amount, paymentStatus, paymentMethodId } =
