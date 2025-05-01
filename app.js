@@ -5,6 +5,7 @@ const compression = require("compression");
 const socketIo = require("socket.io");
 const bodyParser = require("body-parser");
 const createError = require("http-errors");
+const admin = require("firebase-admin");
 
 const http = require("http");
 const { db } = require("./firebase/config"); // Firebase Firestore configuration
@@ -75,6 +76,60 @@ const getOrCreateChat = async (sender, receiver) => {
     console.error("Error getting/creating chat:", error);
   }
 };
+// Route to get a specific user by UID
+app.get("/api/getAuthUserByUid", async (req, res) => {
+  const { uid } = req.query; // Retrieve UID from query parameters
+
+  try {
+    const userRecord = await admin.auth().getUser(uid); // Fetch the user by UID
+    const user = userRecord.toJSON(); // Convert the user record to JSON
+
+    console.log("User found:", user); // Log the user data
+
+    // Sending the user data to the frontend
+    res.status(200).json({
+      success: true,
+      user: user,
+    });
+  } catch (error) {
+    console.error("Error fetching user by UID:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// app.get("/api/getAuthUsers", async (req, res) => {
+//   try {
+//     const users = [];
+//     let result;
+
+//     // Fetch users in batches (1000 users at a time)
+//     do {
+//       result = await admin
+//         .auth()
+//         .listUsers(1000, result ? result.pageToken : undefined);
+//       result.users.forEach((userRecord) => {
+//         users.push(userRecord.toJSON()); // Convert to JSON to get necessary details
+//       });
+//     } while (result.pageToken); // Keep fetching until all users are fetched
+
+//     console.log("All authenticated users:", users); // Log to the console
+
+//     // Sending the users list to the frontend
+//     res.status(200).json({
+//       success: true,
+//       users: users,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching users from Firebase Authentication:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: error.message,
+//     });
+//   }
+// });
 app.post("/api/charge", async (req, res) => {
   try {
     const { name, userId, productId, amount, paymentStatus, paymentMethodId } =
