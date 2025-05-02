@@ -99,6 +99,23 @@ app.get("/api/getAuthUserByUid", async (req, res) => {
     });
   }
 });
+app.post("/api/delete-user", async (req, res) => {
+  const uid = req.body.uid || req.query.uid; // Accept from body OR query
+
+  if (!uid) {
+    return res.status(400).json({ error: "UID is required" });
+  }
+
+  try {
+    await admin.auth().deleteUser(uid);
+    return res
+      .status(200)
+      .json({ message: `User ${uid} deleted from Firebase Authentication.` });
+  } catch (error) {
+    console.error("Error deleting user:", error.message);
+    return res.status(500).json({ error: "Failed to delete user from Auth" });
+  }
+});
 
 app.get("/api/getAuthUsers", async (req, res) => {
   try {
