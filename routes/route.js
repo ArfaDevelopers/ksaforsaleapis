@@ -357,6 +357,40 @@ router.get("/cars", async (_, res) => {
 });
 
 // Send OTP
+// router.post("/send-otp", async (req, res) => {
+//   const { phone } = req.body;
+
+//   if (!phone) {
+//     return res
+//       .status(400)
+//       .json({ success: false, message: "Phone number is required" });
+//   }
+
+//   try {
+//     const response = await axios.post(
+//       `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/Verifications`,
+//       new URLSearchParams({
+//         To: phone,
+//         Channel: "sms",
+//       }).toString(),
+//       {
+//         headers: {
+//           "Content-Type": "application/x-www-form-urlencoded",
+//           Authorization: `Basic ${Buffer.from(
+//             `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
+//           ).toString("base64")}`,
+//         },
+//       }
+//     );
+
+//     res.json({ success: true, message: "OTP sent successfully" });
+//   } catch (error) {
+//     console.error("Error sending OTP:", error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: "Error sending OTP", error });
+//   }
+// });
 router.post("/send-otp", async (req, res) => {
   const { phone } = req.body;
 
@@ -364,6 +398,14 @@ router.post("/send-otp", async (req, res) => {
     return res
       .status(400)
       .json({ success: false, message: "Phone number is required" });
+  }
+
+  // Validate phone number format (E.164 format)
+  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+  if (!phoneRegex.test(phone)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid phone number format" });
   }
 
   try {
@@ -385,10 +427,12 @@ router.post("/send-otp", async (req, res) => {
 
     res.json({ success: true, message: "OTP sent successfully" });
   } catch (error) {
-    console.error("Error sending OTP:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error sending OTP", error });
+    console.error("Error sending OTP:", error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      message: "Error sending OTP",
+      error: error.response?.data,
+    });
   }
 });
 
