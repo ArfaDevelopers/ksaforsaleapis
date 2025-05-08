@@ -360,6 +360,25 @@ router.get("/cars", async (_, res) => {
     return res.status(500).json({ error: "Error fetching cars" });
   }
 });
+router.get("/PETANIMALCOMP", async (_, res) => {
+  try {
+    const PETANIMALCOMPSnapshot = await db.collection("PETANIMALCOMP").get();
+    const PETANIMALCOMP = PETANIMALCOMPSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
+
+    return res.status(200).json(PETANIMALCOMP);
+  } catch (error) {
+    console.error("Error fetching PETANIMALCOMP:", error);
+    return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
+  }
+});
 
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
