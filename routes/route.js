@@ -455,6 +455,44 @@ router.get("/FASHION", async (_, res) => {
     return res.status(500).json({ error: "Error fetching FASHION" });
   }
 });
+router.get("/HEALTHCARE", async (_, res) => {
+  try {
+    const HEALTHCARESnapshot = await db.collection("HEALTHCARE").get();
+    const HEALTHCARE = HEALTHCARESnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
+
+    return res.status(200).json(HEALTHCARE);
+  } catch (error) {
+    console.error("Error fetching HEALTHCARE:", error);
+    return res.status(500).json({ error: "Error fetching HEALTHCARE" });
+  }
+});
+router.get("/TRAVEL", async (_, res) => {
+  try {
+    const TRAVELSnapshot = await db.collection("TRAVEL").get();
+    const TRAVEL = TRAVELSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
+
+    return res.status(200).json(TRAVEL);
+  } catch (error) {
+    console.error("Error fetching TRAVEL:", error);
+    return res.status(500).json({ error: "Error fetching TRAVEL" });
+  }
+});
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
 //   const { phone } = req.body;
