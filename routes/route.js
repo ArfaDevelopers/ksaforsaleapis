@@ -514,6 +514,25 @@ router.get("/SPORTSGAMESComp", async (_, res) => {
     return res.status(500).json({ error: "Error fetching SPORTSGAMESComp" });
   }
 });
+router.get("/Education", async (_, res) => {
+  try {
+    const EducationSnapshot = await db.collection("Education").get();
+    const Education = EducationSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
+
+    return res.status(200).json(Education);
+  } catch (error) {
+    console.error("Error fetching Education:", error);
+    return res.status(500).json({ error: "Error fetching Education" });
+  }
+});
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
 //   const { phone } = req.body;
