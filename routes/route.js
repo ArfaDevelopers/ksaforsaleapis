@@ -557,7 +557,150 @@ router.patch("/cars/:id/view", async (req, res) => {
     return res.status(500).json({ error: "Error updating view count" });
   }
 });
+router.patch("/SPORTSGAMESComp/:id/view", async (req, res) => {
+  const carId = req.params.id;
 
+  try {
+    const carRef = db.collection("SPORTSGAMESComp").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    const carData = carDoc.data();
+    const currentViews = carData.views || 0;
+
+    await carRef.update({
+      views: currentViews + 1,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+router.patch("/TRAVEL/:id/view", async (req, res) => {
+  const carId = req.params.id;
+
+  try {
+    const carRef = db.collection("TRAVEL").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    const carData = carDoc.data();
+    const currentViews = carData.views || 0;
+
+    await carRef.update({
+      views: currentViews + 1,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+router.patch("/JOBBOARD/:id/view", async (req, res) => {
+  const carId = req.params.id;
+
+  try {
+    const carRef = db.collection("JOBBOARD").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    const carData = carDoc.data();
+    const currentViews = carData.views || 0;
+
+    await carRef.update({
+      views: currentViews + 1,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+router.patch("/HEALTHCARE/:id/view", async (req, res) => {
+  const carId = req.params.id;
+
+  try {
+    const carRef = db.collection("HEALTHCARE").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    const carData = carDoc.data();
+    const currentViews = carData.views || 0;
+
+    await carRef.update({
+      views: currentViews + 1,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+router.patch("/FASHION/:id/view", async (req, res) => {
+  const carId = req.params.id;
+
+  try {
+    const carRef = db.collection("FASHION").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    const carData = carDoc.data();
+    const currentViews = carData.views || 0;
+
+    await carRef.update({
+      views: currentViews + 1,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+router.patch("/PETANIMALCOMP/:id/view", async (req, res) => {
+  const carId = req.params.id;
+
+  try {
+    const carRef = db.collection("PETANIMALCOMP").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    const carData = carDoc.data();
+    const currentViews = carData.views || 0;
+
+    await carRef.update({
+      views: currentViews + 1,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
 //   const { phone } = req.body;
