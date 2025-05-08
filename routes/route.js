@@ -533,6 +533,31 @@ router.get("/Education", async (_, res) => {
     return res.status(500).json({ error: "Error fetching Education" });
   }
 });
+router.patch("/cars/:id/view", async (req, res) => {
+  const carId = req.params.id;
+
+  try {
+    const carRef = db.collection("Education").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    const carData = carDoc.data();
+    const currentViews = carData.views || 0;
+
+    await carRef.update({
+      views: currentViews + 1,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
 //   const { phone } = req.body;
