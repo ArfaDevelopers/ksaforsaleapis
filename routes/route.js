@@ -344,10 +344,15 @@ router.post("/add-user", async (req, res) => {
 router.get("/cars", async (_, res) => {
   try {
     const carsSnapshot = await db.collection("Cars").get();
-    const cars = carsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const cars = carsSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
 
     return res.status(200).json(cars);
   } catch (error) {
