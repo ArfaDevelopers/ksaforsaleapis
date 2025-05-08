@@ -379,7 +379,82 @@ router.get("/PETANIMALCOMP", async (_, res) => {
     return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
   }
 });
+router.get("/ELECTRONICS", async (_, res) => {
+  try {
+    const ELECTRONICSSnapshot = await db.collection("ELECTRONICS").get();
+    const ELECTRONICS = ELECTRONICSSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
 
+    return res.status(200).json(ELECTRONICS);
+  } catch (error) {
+    console.error("Error fetching ELECTRONICS:", error);
+    return res.status(500).json({ error: "Error fetching ELECTRONICS" });
+  }
+});
+router.get("/REALESTATECOMP", async (_, res) => {
+  try {
+    const REALESTATECOMPSnapshot = await db.collection("REALESTATECOMP").get();
+    const REALESTATECOMP = REALESTATECOMPSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
+
+    return res.status(200).json(REALESTATECOMP);
+  } catch (error) {
+    console.error("Error fetching REALESTATECOMP:", error);
+    return res.status(500).json({ error: "Error fetching REALESTATECOMP" });
+  }
+});
+router.get("/JOBBOARD", async (_, res) => {
+  try {
+    const JOBBOARDSnapshot = await db.collection("JOBBOARD").get();
+    const JOBBOARD = JOBBOARDSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
+
+    return res.status(200).json(JOBBOARD);
+  } catch (error) {
+    console.error("Error fetching JOBBOARD:", error);
+    return res.status(500).json({ error: "Error fetching JOBBOARD" });
+  }
+});
+router.get("/FASHION", async (_, res) => {
+  try {
+    const FASHIONSnapshot = await db.collection("FASHION").get();
+    const FASHION = FASHIONSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
+
+    return res.status(200).json(FASHION);
+  } catch (error) {
+    console.error("Error fetching FASHION:", error);
+    return res.status(500).json({ error: "Error fetching FASHION" });
+  }
+});
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
 //   const { phone } = req.body;
