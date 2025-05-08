@@ -493,6 +493,27 @@ router.get("/TRAVEL", async (_, res) => {
     return res.status(500).json({ error: "Error fetching TRAVEL" });
   }
 });
+router.get("/SPORTSGAMESComp", async (_, res) => {
+  try {
+    const SPORTSGAMESCompSnapshot = await db
+      .collection("SPORTSGAMESComp")
+      .get();
+    const SPORTSGAMESComp = SPORTSGAMESCompSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((car) => {
+        const isActive = car.isActive;
+        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      });
+
+    return res.status(200).json(SPORTSGAMESComp);
+  } catch (error) {
+    console.error("Error fetching SPORTSGAMESComp:", error);
+    return res.status(500).json({ error: "Error fetching SPORTSGAMESComp" });
+  }
+});
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
 //   const { phone } = req.body;
