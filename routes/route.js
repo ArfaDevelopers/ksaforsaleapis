@@ -537,7 +537,7 @@ router.patch("/cars/:id/view", async (req, res) => {
   const carId = req.params.id;
 
   try {
-    const carRef = db.collection("Education").doc(carId);
+    const carRef = db.collection("Cars").doc(carId);
     const carDoc = await carRef.get();
 
     if (!carDoc.exists) {
