@@ -533,8 +533,35 @@ router.get("/Education", async (_, res) => {
     return res.status(500).json({ error: "Error fetching Education" });
   }
 });
+// router.patch("/cars/:id/view", async (req, res) => {
+//   const carId = req.params.id;
+
+//   try {
+//     const carRef = db.collection("Cars").doc(carId);
+//     const carDoc = await carRef.get();
+
+//     if (!carDoc.exists) {
+//       return res.status(404).json({ error: "Car not found" });
+//     }
+
+//     const carData = carDoc.data();
+//     const currentViews = carData.views || 0;
+
+//     await carRef.update({
+//       views: currentViews + 1,
+//     });
+
+//     return res.status(200).json({ message: "View count updated" });
+//   } catch (error) {
+//     console.error("Error updating view count:", error);
+//     return res.status(500).json({ error: "Error updating view count" });
+//   }
+// });
+
 router.patch("/cars/:id/view", async (req, res) => {
   const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
 
   try {
     const carRef = db.collection("Cars").doc(carId);
@@ -545,10 +572,124 @@ router.patch("/cars/:id/view", async (req, res) => {
     }
 
     const carData = carDoc.data();
-    const currentViews = carData.views || 0;
+    const lastViewedTimestamp = carData.lastViewed || 0;
 
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
     await carRef.update({
-      views: currentViews + 1,
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+router.patch("/REALESTATECOMP/:id/view", async (req, res) => {
+  const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
+
+  try {
+    const carRef = db.collection("REALESTATECOMP").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "REALESTATECOMP not found" });
+    }
+
+    const carData = carDoc.data();
+    const lastViewedTimestamp = carData.lastViewed || 0;
+
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
+    await carRef.update({
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+router.patch("/ELECTRONICS/:id/view", async (req, res) => {
+  const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
+
+  try {
+    const carRef = db.collection("ELECTRONICS").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "ELECTRONICS not found" });
+    }
+
+    const carData = carDoc.data();
+    const lastViewedTimestamp = carData.lastViewed || 0;
+
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
+    await carRef.update({
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
+    });
+
+    return res.status(200).json({ message: "View count updated" });
+  } catch (error) {
+    console.error("Error updating view count:", error);
+    return res.status(500).json({ error: "Error updating view count" });
+  }
+});
+router.patch("/Education/:id/view", async (req, res) => {
+  const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
+
+  try {
+    const carRef = db.collection("Education").doc(carId);
+    const carDoc = await carRef.get();
+
+    if (!carDoc.exists) {
+      return res.status(404).json({ error: "Education not found" });
+    }
+
+    const carData = carDoc.data();
+    const lastViewedTimestamp = carData.lastViewed || 0;
+
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
+    await carRef.update({
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
     });
 
     return res.status(200).json({ message: "View count updated" });
@@ -559,6 +700,8 @@ router.patch("/cars/:id/view", async (req, res) => {
 });
 router.patch("/SPORTSGAMESComp/:id/view", async (req, res) => {
   const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
 
   try {
     const carRef = db.collection("SPORTSGAMESComp").doc(carId);
@@ -569,10 +712,19 @@ router.patch("/SPORTSGAMESComp/:id/view", async (req, res) => {
     }
 
     const carData = carDoc.data();
-    const currentViews = carData.views || 0;
+    const lastViewedTimestamp = carData.lastViewed || 0;
 
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
     await carRef.update({
-      views: currentViews + 1,
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
     });
 
     return res.status(200).json({ message: "View count updated" });
@@ -583,6 +735,8 @@ router.patch("/SPORTSGAMESComp/:id/view", async (req, res) => {
 });
 router.patch("/TRAVEL/:id/view", async (req, res) => {
   const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
 
   try {
     const carRef = db.collection("TRAVEL").doc(carId);
@@ -593,10 +747,19 @@ router.patch("/TRAVEL/:id/view", async (req, res) => {
     }
 
     const carData = carDoc.data();
-    const currentViews = carData.views || 0;
+    const lastViewedTimestamp = carData.lastViewed || 0;
 
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
     await carRef.update({
-      views: currentViews + 1,
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
     });
 
     return res.status(200).json({ message: "View count updated" });
@@ -605,22 +768,34 @@ router.patch("/TRAVEL/:id/view", async (req, res) => {
     return res.status(500).json({ error: "Error updating view count" });
   }
 });
+
 router.patch("/JOBBOARD/:id/view", async (req, res) => {
   const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
 
   try {
     const carRef = db.collection("JOBBOARD").doc(carId);
     const carDoc = await carRef.get();
 
     if (!carDoc.exists) {
-      return res.status(404).json({ error: "Car not found" });
+      return res.status(404).json({ error: "JOBBOARD not found" });
     }
 
     const carData = carDoc.data();
-    const currentViews = carData.views || 0;
+    const lastViewedTimestamp = carData.lastViewed || 0;
 
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
     await carRef.update({
-      views: currentViews + 1,
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
     });
 
     return res.status(200).json({ message: "View count updated" });
@@ -631,6 +806,8 @@ router.patch("/JOBBOARD/:id/view", async (req, res) => {
 });
 router.patch("/HEALTHCARE/:id/view", async (req, res) => {
   const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
 
   try {
     const carRef = db.collection("HEALTHCARE").doc(carId);
@@ -641,10 +818,19 @@ router.patch("/HEALTHCARE/:id/view", async (req, res) => {
     }
 
     const carData = carDoc.data();
-    const currentViews = carData.views || 0;
+    const lastViewedTimestamp = carData.lastViewed || 0;
 
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
     await carRef.update({
-      views: currentViews + 1,
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
     });
 
     return res.status(200).json({ message: "View count updated" });
@@ -655,20 +841,31 @@ router.patch("/HEALTHCARE/:id/view", async (req, res) => {
 });
 router.patch("/FASHION/:id/view", async (req, res) => {
   const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
 
   try {
     const carRef = db.collection("FASHION").doc(carId);
     const carDoc = await carRef.get();
 
     if (!carDoc.exists) {
-      return res.status(404).json({ error: "Car not found" });
+      return res.status(404).json({ error: "FASHION not found" });
     }
 
     const carData = carDoc.data();
-    const currentViews = carData.views || 0;
+    const lastViewedTimestamp = carData.lastViewed || 0;
 
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
     await carRef.update({
-      views: currentViews + 1,
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
     });
 
     return res.status(200).json({ message: "View count updated" });
@@ -679,20 +876,31 @@ router.patch("/FASHION/:id/view", async (req, res) => {
 });
 router.patch("/PETANIMALCOMP/:id/view", async (req, res) => {
   const carId = req.params.id;
+  const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const now = Date.now();
 
   try {
     const carRef = db.collection("PETANIMALCOMP").doc(carId);
     const carDoc = await carRef.get();
 
     if (!carDoc.exists) {
-      return res.status(404).json({ error: "Car not found" });
+      return res.status(404).json({ error: "PETANIMALCOMP not found" });
     }
 
     const carData = carDoc.data();
-    const currentViews = carData.views || 0;
+    const lastViewedTimestamp = carData.lastViewed || 0;
 
+    // If the last view was within the cooldown period (24 hours), reject the request
+    if (now - lastViewedTimestamp < cooldownPeriod) {
+      return res
+        .status(429)
+        .json({ message: "Please wait 24 hours before clicking again" });
+    }
+
+    // Update the view count and the timestamp of the last view
     await carRef.update({
-      views: currentViews + 1,
+      views: (carData.views || 0) + 1,
+      lastViewed: now,
     });
 
     return res.status(200).json({ message: "View count updated" });
@@ -701,6 +909,7 @@ router.patch("/PETANIMALCOMP/:id/view", async (req, res) => {
     return res.status(500).json({ error: "Error updating view count" });
   }
 });
+
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
 //   const { phone } = req.body;
