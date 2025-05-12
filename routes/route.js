@@ -909,6 +909,53 @@ router.patch("/PETANIMALCOMP/:id/view", async (req, res) => {
     return res.status(500).json({ error: "Error updating view count" });
   }
 });
+router.get("/trendingProducts", async (_, res) => {
+  const collectionNames = [
+    "Cars",
+    "ELECTRONICS",
+    "Education",
+    "FASHION",
+    "HEALTHCARE",
+    "JOBBOARD",
+    "PETANIMALCOMP",
+    "REALESTATECOMP",
+    "SPORTSGAMESComp",
+    "TRAVEL",
+  ];
+
+  let allProducts = [];
+
+  try {
+    for (const name of collectionNames) {
+      const snapshot = await db.collection(name).get();
+      const items = snapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          collection: name, // optional: helps identify the origin
+        }))
+        .filter(
+          (item) =>
+            item.isActive !== true &&
+            item.isActive !== "true" &&
+            typeof item.views === "number"
+        ); // ensure views is numeric
+
+      allProducts.push(...items);
+    }
+
+    // Sort by views descending
+    const sortedByViews = allProducts.sort((a, b) => b.views - a.views);
+
+    // Take top 5
+    const top5 = sortedByViews.slice(0, 5);
+
+    return res.status(200).json(top5);
+  } catch (error) {
+    console.error("Error fetching trending products:", error);
+    return res.status(500).json({ error: "Error fetching trending products" });
+  }
+});
 
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
