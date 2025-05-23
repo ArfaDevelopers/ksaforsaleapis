@@ -23,14 +23,18 @@ const io = socketIo(server, {
     origin: "*",
   },
 });
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+const TWILIO_SERVICE_SID = process.env.TWILIO_SERVICE_SID;
 
-const TWILIO_SERVICE_SID = "VA11fde75371f7e79949bcf4c1e6cb8fef";
+// const TWILIO_SERVICE_SID = "VA11fde75371f7e79949bcf4c1e6cb8fef";
 
-const TWILIO_ACCOUNT_SID = "AC1889f1661cd9d55526ddbf75143ca9a2";
-const TWILIO_AUTH_TOKEN = "3646885bb5e2f2adb574680251d84de5";
+// const TWILIO_ACCOUNT_SID = "AC1889f1661cd9d55526ddbf75143ca9a2";
+// const TWILIO_AUTH_TOKEN = "3646885bb5e2f2adb574680251d84de5";
 // Generate Access Token for User
 const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-const TWILIO_PHONE_NUMBER = "+12013895347"; // Your Twilio number
+// const TWILIO_PHONE_NUMBER = "+12013895347"; // Your Twilio number
 app.use(cors());
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");

@@ -20,14 +20,18 @@ const server = http.createServer(app);
 
 // const TWILIO_ACCOUNT_SID = "AC10ecc49693f7d3f967529681877e661f";
 // const TWILIO_AUTH_TOKEN = "b1b5ec56e8255b53aeb5d7a0e4c5ff8b";
-const TWILIO_SERVICE_SID = "VA11fde75371f7e79949bcf4c1e6cb8fef";
 
-const TWILIO_ACCOUNT_SID = "AC1889f1661cd9d55526ddbf75143ca9a2";
-const TWILIO_AUTH_TOKEN = "3646885bb5e2f2adb574680251d84de5";
+// const TWILIO_SERVICE_SID = "VA11fde75371f7e79949bcf4c1e6cb8fef";
+
+// const TWILIO_ACCOUNT_SID = "AC1889f1661cd9d55526ddbf75143ca9a2";
+// const TWILIO_AUTH_TOKEN = "3646885bb5e2f2adb574680251d84de5";
 // Generate Access Token for User
 const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-const TWILIO_PHONE_NUMBER = "+12013895347"; // Your Twilio number
-
+// const TWILIO_PHONE_NUMBER = "+12013895347"; // Your Twilio number
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+const TWILIO_SERVICE_SID = process.env.TWILIO_SERVICE_SID;
 require("dotenv").config();
 
 app.use(express.json()); // Add this line
