@@ -236,6 +236,34 @@ app.get("/api/user-data", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+app.get("/api/total-data-count", async (req, res) => {
+  try {
+    const collectionNames = [
+      "Cars",
+      "PETANIMALCOMP",
+      "SPORTSGAMESComp",
+      "REALESTATECOMP",
+      "TRAVEL",
+      "JOBBOARD",
+      "HEALTHCARE",
+      "FASHION",
+      "Education",
+      "ELECTRONICS",
+    ];
+
+    let totalCount = 0;
+
+    for (const name of collectionNames) {
+      const snapshot = await db.collection(name).get();
+      totalCount += snapshot.size; // snapshot.size gives the number of documents
+    }
+
+    return res.status(200).json({ totalCount });
+  } catch (error) {
+    console.error("Error counting total data:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 app.post("/api/collection-counts", async (req, res) => {
   try {
