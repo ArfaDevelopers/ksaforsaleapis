@@ -264,6 +264,56 @@ app.get("/api/total-data-count", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+app.get("/api/total-favourite", async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId parameter" });
+    }
+
+    const collectionNames = [
+      "Cars",
+      "PETANIMALCOMP",
+      "SPORTSGAMESComp",
+      "REALESTATECOMP",
+      "TRAVEL",
+      "JOBBOARD",
+      "HEALTHCARE",
+      "FASHION",
+      "Education",
+      "ELECTRONICS",
+    ];
+
+    let totalCount = 0;
+
+    for (const name of collectionNames) {
+      const snapshot = await db
+        .collection(name)
+        .where("userId", "==", userId)
+        .where("bookmarked", "==", true)
+        .get();
+
+      totalCount += snapshot.size;
+    }
+
+    return res.status(200).json({ userId, totalBookmarked: totalCount });
+  } catch (error) {
+    console.error("Error counting favourites:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+app.get("/api/total-messages", async (req, res) => {
+  try {
+    const snapshot = await db.collection("messages").get();
+    const totalMessages = snapshot.size;
+
+    return res.status(200).json({ totalMessages });
+  } catch (error) {
+    console.error("Error counting messages:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 app.post("/api/collection-counts", async (req, res) => {
   try {
