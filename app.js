@@ -6,6 +6,7 @@ const socketIo = require("socket.io");
 const bodyParser = require("body-parser");
 const createError = require("http-errors");
 const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
 
 const http = require("http");
 const { db } = require("./firebase/config"); // Firebase Firestore configuration
@@ -80,6 +81,53 @@ const getOrCreateChat = async (sender, receiver) => {
     console.error("Error getting/creating chat:", error);
   }
 };
+app.get("/search", async (req, res) => {
+  const query = req.query.q?.toLowerCase();
+  if (!query) return res.status(400).json({ error: "Missing query string" });
+
+  const db = getFirestore(); // or your DB initialization
+
+  // Collections to search in
+  const collections = [
+    "Cars",
+    "ELECTRONICS",
+    "Education",
+    "FASHION",
+    "HEALTHCARE",
+    "JOBBOARD",
+    "PETANIMALCOMP",
+    "REALESTATECOMP",
+    "SPORTSGAMESComp",
+    "TRAVEL",
+  ]; // your Firestore or MongoDB collection names
+
+  const results = [];
+
+  for (const collectionName of collections) {
+    const snapshot = await db
+      .collection(collectionName)
+      .where("isActive", "==", false)
+      .get();
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const title = data.title?.toLowerCase() || "";
+      console.log("Checking title:", title); // DEBUG
+
+      if (title.includes(query)) {
+        results.push({
+          id: doc.id,
+          title: data.title,
+          category: data.category,
+          subCategory: data.SubCategory,
+          image: data.galleryImages?.[0] || null,
+        });
+      }
+    });
+  }
+
+  return res.json({ results });
+});
 // Route to get a specific user by UID
 app.get("/api/getAuthUserByUid", async (req, res) => {
   const { uid } = req.query; // Retrieve UID from query parameters
