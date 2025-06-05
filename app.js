@@ -85,9 +85,8 @@ app.get("/search", async (req, res) => {
   const query = req.query.q?.toLowerCase();
   if (!query) return res.status(400).json({ error: "Missing query string" });
 
-  const db = getFirestore(); // or your DB initialization
+  const db = getFirestore();
 
-  // Collections to search in
   const collections = [
     "Cars",
     "ELECTRONICS",
@@ -99,35 +98,91 @@ app.get("/search", async (req, res) => {
     "REALESTATECOMP",
     "SPORTSGAMESComp",
     "TRAVEL",
-  ]; // your Firestore or MongoDB collection names
+  ];
 
-  const results = [];
+  try {
+    const promises = collections.map((collectionName) =>
+      db
+        .collection(collectionName)
+        .where("isActive", "==", false)
+        .get()
+        .then((snapshot) =>
+          snapshot.docs
+            .map((doc) => {
+              const data = doc.data();
+              const title = data.title?.toLowerCase() || "";
+              if (title.includes(query)) {
+                return {
+                  id: doc.id,
+                  title: data.title,
+                  category: data.category,
+                  subCategory: data.SubCategory,
+                  image: data.galleryImages?.[0] || null,
+                };
+              }
+              return null;
+            })
+            .filter(Boolean)
+        )
+    );
 
-  for (const collectionName of collections) {
-    const snapshot = await db
-      .collection(collectionName)
-      .where("isActive", "==", false)
-      .get();
+    const resultsArray = await Promise.all(promises);
+    const results = resultsArray.flat();
 
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const title = data.title?.toLowerCase() || "";
-      console.log("Checking title:", title); // DEBUG
-
-      if (title.includes(query)) {
-        results.push({
-          id: doc.id,
-          title: data.title,
-          category: data.category,
-          subCategory: data.SubCategory,
-          image: data.galleryImages?.[0] || null,
-        });
-      }
-    });
+    return res.json({ results });
+  } catch (error) {
+    console.error("Search error:", error);
+    return res.status(500).json({ error: "Search failed" });
   }
-
-  return res.json({ results });
 });
+
+// app.get("/search", async (req, res) => {
+//   const query = req.query.q?.toLowerCase();
+//   if (!query) return res.status(400).json({ error: "Missing query string" });
+
+//   const db = getFirestore(); // or your DB initialization
+
+//   // Collections to search in
+//   const collections = [
+//     "Cars",
+//     "ELECTRONICS",
+//     "Education",
+//     "FASHION",
+//     "HEALTHCARE",
+//     "JOBBOARD",
+//     "PETANIMALCOMP",
+//     "REALESTATECOMP",
+//     "SPORTSGAMESComp",
+//     "TRAVEL",
+//   ]; // your Firestore or MongoDB collection names
+
+//   const results = [];
+
+//   for (const collectionName of collections) {
+//     const snapshot = await db
+//       .collection(collectionName)
+//       .where("isActive", "==", false)
+//       .get();
+
+//     snapshot.forEach((doc) => {
+//       const data = doc.data();
+//       const title = data.title?.toLowerCase() || "";
+//       console.log("Checking title:", title); // DEBUG
+
+//       if (title.includes(query)) {
+//         results.push({
+//           id: doc.id,
+//           title: data.title,
+//           category: data.category,
+//           subCategory: data.SubCategory,
+//           image: data.galleryImages?.[0] || null,
+//         });
+//       }
+//     });
+//   }
+
+//   return res.json({ results });
+// });
 // Route to get a specific user by UID
 app.get("/api/getAuthUserByUid", async (req, res) => {
   const { uid } = req.query; // Retrieve UID from query parameters
