@@ -346,8 +346,29 @@ router.post("/add-user", async (req, res) => {
 });
 
 // Fetch all cars from Firestore
-router.get("/cars", async (_, res) => {
+// router.get("/cars", async (_, res) => {
+//   try {
+//     const carsSnapshot = await db.collection("Cars").get();
+//     const cars = carsSnapshot.docs
+//       .map((doc) => ({
+//         id: doc.id,
+//         ...doc.data(),
+//       }))
+//       .filter((car) => {
+//         const isActive = car.isActive;
+//         return isActive !== true && isActive !== "true"; // exclude only true or "true"
+//       });
+
+//     return res.status(200).json(cars);
+//   } catch (error) {
+//     console.error("Error fetching cars:", error);
+//     return res.status(500).json({ error: "Error fetching cars" });
+//   }
+// });
+router.get("/cars", async (req, res) => {
   try {
+    const searchText = req.query.searchText?.toLowerCase(); // optional chaining and lowercase for case-insensitive comparison
+
     const carsSnapshot = await db.collection("Cars").get();
     const cars = carsSnapshot.docs
       .map((doc) => ({
@@ -356,171 +377,322 @@ router.get("/cars", async (_, res) => {
       }))
       .filter((car) => {
         const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+        return isActive !== true && isActive !== "true"; // exclude only active cars
       });
 
-    return res.status(200).json(cars);
+    // If searchText is present, filter based on title or subCategories
+    const filteredCars = searchText
+      ? cars.filter((car) => {
+          const titleMatch = car.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(car.subCategories)
+            ? car.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : cars;
+
+    return res.status(200).json(filteredCars);
   } catch (error) {
     console.error("Error fetching cars:", error);
     return res.status(500).json({ error: "Error fetching cars" });
   }
 });
-router.get("/PETANIMALCOMP", async (_, res) => {
+
+router.get("/PETANIMALCOMP", async (req, res) => {
   try {
-    const PETANIMALCOMPSnapshot = await db.collection("PETANIMALCOMP").get();
-    const PETANIMALCOMP = PETANIMALCOMPSnapshot.docs
+    const searchText = req.query.searchText?.toLowerCase();
+
+    const snapshot = await db.collection("PETANIMALCOMP").get();
+    const data = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      .filter((item) => {
+        const isActive = item.isActive;
+        return isActive !== true && isActive !== "true";
       });
 
-    return res.status(200).json(PETANIMALCOMP);
+    const filtered = searchText
+      ? data.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : data;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching PETANIMALCOMP:", error);
     return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
   }
 });
-router.get("/ELECTRONICS", async (_, res) => {
+
+router.get("/ELECTRONICS", async (req, res) => {
   try {
-    const ELECTRONICSSnapshot = await db.collection("ELECTRONICS").get();
-    const ELECTRONICS = ELECTRONICSSnapshot.docs
+    const searchText = req.query.searchText?.toLowerCase();
+
+    const snapshot = await db.collection("ELECTRONICS").get();
+    const electronics = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      .filter((item) => {
+        const isActive = item.isActive;
+        return isActive !== true && isActive !== "true";
       });
 
-    return res.status(200).json(ELECTRONICS);
+    const filtered = searchText
+      ? electronics.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : electronics;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching ELECTRONICS:", error);
     return res.status(500).json({ error: "Error fetching ELECTRONICS" });
   }
 });
-router.get("/REALESTATECOMP", async (_, res) => {
+
+router.get("/REALESTATECOMP", async (req, res) => {
   try {
-    const REALESTATECOMPSnapshot = await db.collection("REALESTATECOMP").get();
-    const REALESTATECOMP = REALESTATECOMPSnapshot.docs
+    const searchText = req.query.searchText?.toLowerCase();
+
+    const snapshot = await db.collection("REALESTATECOMP").get();
+    const data = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      .filter((item) => {
+        const isActive = item.isActive;
+        return isActive !== true && isActive !== "true";
       });
 
-    return res.status(200).json(REALESTATECOMP);
+    const filtered = searchText
+      ? data.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : data;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching REALESTATECOMP:", error);
     return res.status(500).json({ error: "Error fetching REALESTATECOMP" });
   }
 });
-router.get("/JOBBOARD", async (_, res) => {
+
+router.get("/JOBBOARD", async (req, res) => {
   try {
-    const JOBBOARDSnapshot = await db.collection("JOBBOARD").get();
-    const JOBBOARD = JOBBOARDSnapshot.docs
+    const searchText = req.query.searchText?.toLowerCase();
+
+    const snapshot = await db.collection("JOBBOARD").get();
+    const jobBoardItems = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      .filter((item) => {
+        const isActive = item.isActive;
+        return isActive !== true && isActive !== "true";
       });
 
-    return res.status(200).json(JOBBOARD);
+    const filtered = searchText
+      ? jobBoardItems.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : jobBoardItems;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching JOBBOARD:", error);
     return res.status(500).json({ error: "Error fetching JOBBOARD" });
   }
 });
-router.get("/FASHION", async (_, res) => {
+
+router.get("/FASHION", async (req, res) => {
   try {
-    const FASHIONSnapshot = await db.collection("FASHION").get();
-    const FASHION = FASHIONSnapshot.docs
+    const searchText = req.query.searchText?.toLowerCase();
+
+    const snapshot = await db.collection("FASHION").get();
+    const fashionItems = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      .filter((item) => {
+        const isActive = item.isActive;
+        return isActive !== true && isActive !== "true"; // only inactive
       });
 
-    return res.status(200).json(FASHION);
+    const filtered = searchText
+      ? fashionItems.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : fashionItems;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching FASHION:", error);
     return res.status(500).json({ error: "Error fetching FASHION" });
   }
 });
-router.get("/HEALTHCARE", async (_, res) => {
+router.get("/HEALTHCARE", async (req, res) => {
   try {
-    const HEALTHCARESnapshot = await db.collection("HEALTHCARE").get();
-    const HEALTHCARE = HEALTHCARESnapshot.docs
+    const searchText = req.query.searchText?.toLowerCase();
+
+    const snapshot = await db.collection("HEALTHCARE").get();
+    const healthcareItems = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      .filter((item) => {
+        const isActive = item.isActive;
+        return isActive !== true && isActive !== "true";
       });
 
-    return res.status(200).json(HEALTHCARE);
+    const filtered = searchText
+      ? healthcareItems.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : healthcareItems;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching HEALTHCARE:", error);
     return res.status(500).json({ error: "Error fetching HEALTHCARE" });
   }
 });
-router.get("/TRAVEL", async (_, res) => {
+router.get("/TRAVEL", async (req, res) => {
   try {
-    const TRAVELSnapshot = await db.collection("TRAVEL").get();
-    const TRAVEL = TRAVELSnapshot.docs
+    const searchText = req.query.searchText?.toLowerCase();
+
+    const snapshot = await db.collection("TRAVEL").get();
+    const data = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      .filter((item) => {
+        const isActive = item.isActive;
+        return isActive !== true && isActive !== "true";
       });
 
-    return res.status(200).json(TRAVEL);
+    const filtered = searchText
+      ? data.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : data;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching TRAVEL:", error);
     return res.status(500).json({ error: "Error fetching TRAVEL" });
   }
 });
-router.get("/SPORTSGAMESComp", async (_, res) => {
+
+// router.get("/TRAVEL", async (_, res) => {
+//   try {
+//     const TRAVELSnapshot = await db.collection("TRAVEL").get();
+//     const TRAVEL = TRAVELSnapshot.docs
+//       .map((doc) => ({
+//         id: doc.id,
+//         ...doc.data(),
+//       }))
+//       .filter((car) => {
+//         const isActive = car.isActive;
+//         return isActive !== true && isActive !== "true"; // exclude only true or "true"
+//       });
+
+//     return res.status(200).json(TRAVEL);
+//   } catch (error) {
+//     console.error("Error fetching TRAVEL:", error);
+//     return res.status(500).json({ error: "Error fetching TRAVEL" });
+//   }
+// });
+router.get("/SPORTSGAMESComp", async (req, res) => {
   try {
-    const SPORTSGAMESCompSnapshot = await db
-      .collection("SPORTSGAMESComp")
-      .get();
-    const SPORTSGAMESComp = SPORTSGAMESCompSnapshot.docs
+    const searchText = req.query.searchText?.toLowerCase();
+
+    const snapshot = await db.collection("SPORTSGAMESComp").get();
+    const data = snapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+      .filter((item) => {
+        const isActive = item.isActive;
+        return isActive !== true && isActive !== "true";
       });
 
-    return res.status(200).json(SPORTSGAMESComp);
+    const filtered = searchText
+      ? data.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : data;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching SPORTSGAMESComp:", error);
     return res.status(500).json({ error: "Error fetching SPORTSGAMESComp" });
   }
 });
-router.get("/Education", async (_, res) => {
+
+router.get("/Education", async (req, res) => {
   try {
+    const searchText = req.query.searchText?.toLowerCase();
+
     const EducationSnapshot = await db.collection("Education").get();
     const Education = EducationSnapshot.docs
       .map((doc) => ({
@@ -529,15 +701,28 @@ router.get("/Education", async (_, res) => {
       }))
       .filter((car) => {
         const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only true or "true"
+        return isActive !== true && isActive !== "true";
       });
 
-    return res.status(200).json(Education);
+    const filtered = searchText
+      ? Education.filter((item) => {
+          const titleMatch = item.title?.toLowerCase().includes(searchText);
+          const subCategoriesMatch = Array.isArray(item.subCategories)
+            ? item.subCategories.some((cat) =>
+                cat.toLowerCase().includes(searchText)
+              )
+            : false;
+          return titleMatch || subCategoriesMatch;
+        })
+      : Education;
+
+    return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching Education:", error);
     return res.status(500).json({ error: "Error fetching Education" });
   }
 });
+
 // router.patch("/cars/:id/view", async (req, res) => {
 //   const carId = req.params.id;
 
