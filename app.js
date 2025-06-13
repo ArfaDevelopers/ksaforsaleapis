@@ -135,6 +135,21 @@ app.get("/search", async (req, res) => {
     return res.status(500).json({ error: "Search failed" });
   }
 });
+app.get("/api/users", async (req, res) => {
+  try {
+    const snapshot = await db.collection("users").get();
+
+    const users = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // app.get("/search", async (req, res) => {
 //   const query = req.query.q?.toLowerCase();
