@@ -271,9 +271,18 @@ app.post("/api/charge", async (req, res) => {
     const { name, userId, productId, amount, paymentStatus, paymentMethodId } =
       req.body;
 
+    // Validate and convert amount
+    const convertedAmount = Math.round(Number(amount) * 100);
+
+    if (isNaN(convertedAmount)) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid amount value" });
+    }
+
     // Create a PaymentIntent with Stripe
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100, // Convert dollars to cents
+      amount: convertedAmount,
       currency: "usd",
       payment_method: paymentMethodId,
       confirm: true,
@@ -289,7 +298,7 @@ app.post("/api/charge", async (req, res) => {
         name,
         userId,
         productId,
-        amount,
+        amount: convertedAmount / 100, // Save as dollars
         paymentStatus: paymentIntent.status,
         paymentIntentId: paymentIntent.id,
         createdAt: new Date().toISOString(),
@@ -312,6 +321,53 @@ app.post("/api/charge", async (req, res) => {
     });
   }
 });
+
+// app.post("/api/charge", async (req, res) => {
+//   try {
+//     const { name, userId, productId, amount, paymentStatus, paymentMethodId } =
+//       req.body;
+
+//     // Create a PaymentIntent with Stripe
+//     const paymentIntent = await stripe.paymentIntents.create({
+//       amount: amount * 100, // Convert dollars to cents
+//       currency: "usd",
+//       payment_method: paymentMethodId,
+//       confirm: true,
+//       automatic_payment_methods: {
+//         enabled: true,
+//         allow_redirects: "never",
+//       },
+//     });
+
+//     // If payment is successful, store the data in Firestore
+//     if (paymentIntent.status === "succeeded") {
+//       await db.collection("Payments").add({
+//         name,
+//         userId,
+//         productId,
+//         amount,
+//         paymentStatus: paymentIntent.status,
+//         paymentIntentId: paymentIntent.id,
+//         createdAt: new Date().toISOString(),
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       clientSecret: paymentIntent.client_secret,
+//       message:
+//         paymentIntent.status === "succeeded"
+//           ? "Payment successful and saved."
+//           : "Payment initiated.",
+//     });
+//   } catch (error) {
+//     console.error("Error during payment processing:", error);
+//     res.status(500).json({
+//       success: false,
+//       error: error.message,
+//     });
+//   }
+// });
 app.get("/api/user-data", async (req, res) => {
   try {
     const { userId, callingFrom } = req.query;
@@ -426,6 +482,36 @@ app.get("/api/total-messages", async (req, res) => {
     return res.status(200).json({ totalMessages });
   } catch (error) {
     console.error("Error counting messages:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+app.get("/api/totalAmount", async (req, res) => {
+  try {
+    const collectionNames = [
+      "Cars",
+      "PETANIMALCOMP",
+      "SPORTSGAMESComp",
+      "REALESTATECOMP",
+      "TRAVEL",
+      "JOBBOARD",
+      "HEALTHCARE",
+      "FASHION",
+      "Education",
+      "ELECTRONICS",
+    ];
+
+    for (const name of collectionNames) {
+      const snapshot = await db.collection(name).get();
+
+      console.log(`\nData from collection: ${name}`);
+      snapshot.forEach((doc) => {
+        console.log(doc.id, "=>", doc.data());
+      });
+    }
+
+    return res.status(200).json({ message: "Data logged to console" });
+  } catch (error) {
+    console.error("Error fetching data from collections:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
