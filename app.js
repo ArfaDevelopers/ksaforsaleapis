@@ -162,7 +162,32 @@ app.get("/api/our-category-automative", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+app.get("/api/our-category-automative1", async (req, res) => {
+  try {
+    const snapshot = await db.collection("OurCategoryAutomative").get();
 
+    // Minimal data transformation for performance
+    const items = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        title: data.title || "",
+        image: optimizeCloudinaryUrl(data.image || ""),
+        timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+      };
+    });
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Optional: Optimize image by transforming the Cloudinary URL
+function optimizeCloudinaryUrl(url) {
+  if (!url.includes("cloudinary.com")) return url;
+  return url.replace("/upload/", "/upload/f_auto,q_auto,w_400,h_300,c_limit/");
+}
 // app.get("/search", async (req, res) => {
 //   const query = req.query.q?.toLowerCase();
 //   if (!query) return res.status(400).json({ error: "Missing query string" });
