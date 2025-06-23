@@ -147,6 +147,21 @@ app.get("/api/users", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+app.get("/api/our-category-automative", async (req, res) => {
+  try {
+    const snapshot = await db.collection("OurCategoryAutomative").get();
+
+    const items = snapshot.docs.map((doc) => {
+      const { image, title } = doc.data();
+      return { image, title };
+    });
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // app.get("/search", async (req, res) => {
 //   const query = req.query.q?.toLowerCase();
