@@ -6,6 +6,9 @@ const socketIo = require("socket.io");
 const bodyParser = require("body-parser");
 const createError = require("http-errors");
 const admin = require("firebase-admin");
+const path = require("path");
+const fs = require("fs");
+
 const { getFirestore } = require("firebase-admin/firestore");
 
 const http = require("http");
@@ -220,6 +223,75 @@ app.get("/api/our-category-OurCategoryFashionStyle", async (req, res) => {
   } catch (error) {
     console.error("Firestore error:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/cities", async (req, res) => {
+  try {
+    const { REGION_ID } = req.query;
+
+    if (!REGION_ID) {
+      return res.status(400).json({ error: "REGION_ID is required" });
+    }
+
+    const filePath = path.join(__dirname, "data", "City.json");
+    const fileData = fs.readFileSync(filePath, "utf8");
+    const jsonData = JSON.parse(fileData);
+
+    const headers = jsonData[0];
+    const rows = jsonData.slice(1);
+
+    const filteredCities = rows
+      .filter((row) => row[0] === REGION_ID) // row[0] is REGION_ID
+      .map((row) => {
+        const city = {};
+        headers.forEach((key, index) => {
+          city[key] = row[index];
+        });
+        return city;
+      });
+
+    res.status(200).json({ cities: filteredCities });
+  } catch (error) {
+    console.error("Error reading City.json:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+app.get("/api/districts", async (req, res) => {
+  try {
+    const { REGION_ID, CITY_ID } = req.query;
+
+    if (!REGION_ID && !CITY_ID) {
+      return res
+        .status(400)
+        .json({ error: "At least REGION_ID or CITY_ID is required" });
+    }
+
+    const filePath = path.join(__dirname, "data", "Districts.json");
+    const fileData = fs.readFileSync(filePath, "utf8");
+    const jsonData = JSON.parse(fileData);
+
+    const headers = jsonData[0];
+    const rows = jsonData.slice(1);
+
+    const filteredDistricts = rows
+      .filter((row) => {
+        const matchesRegion = REGION_ID ? row[0] === REGION_ID : false;
+        const matchesCity = CITY_ID ? row[1] === CITY_ID : false;
+        return matchesRegion || matchesCity; // ✅ FIXED: allow either match
+      })
+      .map((row) => {
+        const district = {};
+        headers.forEach((key, index) => {
+          district[key] = row[index];
+        });
+        return district;
+      });
+
+    res.status(200).json({ districts: filteredDistricts });
+  } catch (error) {
+    console.error("Error reading Districts.json:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 app.get("/api/our-category-OurCategoryHealthCare", async (req, res) => {
