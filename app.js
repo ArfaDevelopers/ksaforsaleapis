@@ -170,7 +170,7 @@ app.get("/api/our-category-automative1", async (req, res) => {
     const items = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
-        title: data.title || "",
+        title: data.Title || "",
         image: optimizeCloudinaryUrl(data.image || ""),
         timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
       };
