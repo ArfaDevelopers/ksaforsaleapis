@@ -417,12 +417,12 @@ app.get("/api/slider-images", async (req, res) => {
     }
 
     const docData = snapshot.docs[0].data();
-    const rawImages = docData.images || [];
+    const imageUrls = docData.imageUrls || [];
 
-    // Cloudinary optimization: use WebP or AVIF with compression and size limits
-    const optimizedImages = rawImages.map((url) => optimizeCloudinaryUrl1(url));
+    // Optimize Cloudinary URLs
+    const optimizedImages = imageUrls.map((url) => optimizeCloudinaryUrl1(url));
 
-    // Cache the response for 1 hour (3600 seconds)
+    // Cache result for 1 hour
     res.setHeader("Cache-Control", "public, max-age=3600");
 
     res.status(200).json({ images: optimizedImages });
@@ -432,12 +432,10 @@ app.get("/api/slider-images", async (req, res) => {
   }
 });
 
-// Cloudinary URL optimization helper
+// Helper to optimize image URLs
 function optimizeCloudinaryUrl1(url) {
   if (!url.includes("cloudinary.com")) return url;
 
-  // Add f_auto, q_auto for format and quality optimization
-  // Add w_1000,h_400,c_limit to reduce payload size
   return url.replace("/upload/", "/upload/f_auto,q_auto,w_1000,h_400,c_limit/");
 }
 
