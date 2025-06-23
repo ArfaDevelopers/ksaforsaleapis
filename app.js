@@ -407,7 +407,42 @@ function optimizeCloudinaryUrl(url) {
   if (!url.includes("cloudinary.com")) return url;
   return url.replace("/upload/", "/upload/f_auto,q_auto,w_400,h_300,c_limit/");
 }
-// app.get("/search", async (req, res) => {
+
+app.get("/api/slider-images", async (req, res) => {
+  try {
+    const snapshot = await db.collection("SliderImage").limit(1).get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ message: "No slider images found." });
+    }
+
+    const docData = snapshot.docs[0].data();
+    const rawImages = docData.images || [];
+
+    // Cloudinary optimization: use WebP or AVIF with compression and size limits
+    const optimizedImages = rawImages.map((url) => optimizeCloudinaryUrl1(url));
+
+    // Cache the response for 1 hour (3600 seconds)
+    res.setHeader("Cache-Control", "public, max-age=3600");
+
+    res.status(200).json({ images: optimizedImages });
+  } catch (error) {
+    console.error("Error fetching slider images:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cloudinary URL optimization helper
+function optimizeCloudinaryUrl1(url) {
+  if (!url.includes("cloudinary.com")) return url;
+
+  // Add f_auto, q_auto for format and quality optimization
+  // Add w_1000,h_400,c_limit to reduce payload size
+  return url.replace("/upload/", "/upload/f_auto,q_auto,w_1000,h_400,c_limit/");
+}
+
+// app.ge
+// t("/search", async (req, res) => {
 //   const query = req.query.q?.toLowerCase();
 //   if (!query) return res.status(400).json({ error: "Missing query string" });
 
