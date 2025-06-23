@@ -182,7 +182,226 @@ app.get("/api/our-category-automative1", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+app.get("/api/our-category-OurCategoryElectronics", async (req, res) => {
+  try {
+    const snapshot = await db.collection("OurCategoryElectronics").get();
 
+    // Minimal data transformation for performance
+    const items = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        title: data.Title || "",
+        image: optimizeCloudinaryUrl(data.image || ""),
+        timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+      };
+    });
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+app.get("/api/our-category-OurCategoryFashionStyle", async (req, res) => {
+  try {
+    const snapshot = await db.collection("OurCategoryFashionStyle").get();
+
+    // Minimal data transformation for performance
+    const items = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        title: data.Title || "",
+        image: optimizeCloudinaryUrl(data.image || ""),
+        timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+      };
+    });
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+app.get("/api/our-category-OurCategoryHealthCare", async (req, res) => {
+  try {
+    const snapshot = await db.collection("OurCategoryHealthCare").get();
+
+    // Minimal data transformation for performance
+    const items = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        title: data.Title || "",
+        image: optimizeCloudinaryUrl(data.image || ""),
+        timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+      };
+    });
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+app.get("/api/our-category-OurCategoryJobBoardAutomative", async (req, res) => {
+  try {
+    const snapshot = await db.collection("OurCategoryJobBoardAutomative").get();
+
+    // Minimal data transformation for performance
+    const items = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        title: data.Title || "",
+        image: optimizeCloudinaryUrl(data.image || ""),
+        timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+      };
+    });
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+app.get("/api/our-category-OurCategoryTravelAutomative", async (req, res) => {
+  try {
+    const snapshot = await db.collection("OurCategoryTravelAutomative").get();
+
+    // Minimal data transformation for performance
+    const items = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        title: data.Title || "",
+        image: optimizeCloudinaryUrl(data.image || ""),
+        timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+      };
+    });
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+app.get(
+  "/api/our-category-OurCategoryRealEstateAutomative",
+  async (req, res) => {
+    try {
+      const snapshot = await db
+        .collection("OurCategoryRealEstateAutomative")
+        .get();
+
+      // Minimal data transformation for performance
+      const items = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          title: data.Title || "",
+          image: optimizeCloudinaryUrl(data.image || ""),
+          timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+        };
+      });
+
+      res.status(200).json({ items });
+    } catch (error) {
+      console.error("Firestore error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+app.get(
+  "/api/our-category-OurCategoryPetAnimalsAutomative",
+  async (req, res) => {
+    try {
+      const snapshot = await db
+        .collection("OurCategoryPetAnimalsAutomative")
+        .get();
+
+      // Minimal data transformation for performance
+      const items = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          title: data.Title || "",
+          image: optimizeCloudinaryUrl(data.image || ""),
+          timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+        };
+      });
+
+      res.status(200).json({ items });
+    } catch (error) {
+      console.error("Firestore error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+app.get(
+  "/api/our-category-OurCategorySportGamesAutomative",
+  async (req, res) => {
+    try {
+      const snapshot = await db
+        .collection("OurCategorySportGamesAutomative")
+        .get();
+
+      // Minimal data transformation for performance
+      const items = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          title: data.Title || "",
+          image: optimizeCloudinaryUrl(data.image || ""),
+          timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+        };
+      });
+
+      res.status(200).json({ items });
+    } catch (error) {
+      console.error("Firestore error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+app.get(
+  "/api/our-category-OurCategoryHouseHoldAutomative",
+  async (req, res) => {
+    try {
+      const snapshot = await db
+        .collection("OurCategoryHouseHoldAutomative")
+        .get();
+
+      // Minimal data transformation for performance
+      const items = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          title: data.Title || "",
+          image: optimizeCloudinaryUrl(data.image || ""),
+          timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+        };
+      });
+
+      res.status(200).json({ items });
+    } catch (error) {
+      console.error("Firestore error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+app.get("/api/our-category-OurCategoryEducation", async (req, res) => {
+  try {
+    const snapshot = await db.collection("OurCategoryEducation").get();
+
+    // Minimal data transformation for performance
+    const items = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        title: data.Title || "",
+        image: optimizeCloudinaryUrl(data.image || ""),
+        timeAgo: data.timeAgo || "", // Or convert timestamp here if needed
+      };
+    });
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Firestore error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 // Optional: Optimize image by transforming the Cloudinary URL
 function optimizeCloudinaryUrl(url) {
   if (!url.includes("cloudinary.com")) return url;
