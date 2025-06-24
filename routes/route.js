@@ -347,7 +347,9 @@ router.post("/add-user", async (req, res) => {
 router.get("/cars", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
-    const regionId = req.query.regionId; // regionId from query string
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const carsSnapshot = await db.collection("Cars").get();
     const cars = carsSnapshot.docs
@@ -362,7 +364,7 @@ router.get("/cars", async (req, res) => {
 
     let filteredCars = cars;
 
-    // 🔍 Apply searchText filter
+    // 🔍 Filter by searchText
     if (searchText) {
       filteredCars = filteredCars.filter((car) => {
         const titleMatch = car.title?.toLowerCase().includes(searchText);
@@ -375,12 +377,25 @@ router.get("/cars", async (req, res) => {
       });
     }
 
-    // ✅ Apply regionId filter if provided
+    // ✅ Filter by regionId
     if (regionId) {
-      filteredCars = filteredCars.filter((car) => {
-        // Normalize to string to compare safely
-        return String(car.regionId) === String(regionId);
-      });
+      filteredCars = filteredCars.filter(
+        (car) => String(car.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filteredCars = filteredCars.filter(
+        (car) => String(car.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filteredCars = filteredCars.filter(
+        (car) => String(car.District_ID) === String(DISTRICT_ID)
+      );
     }
 
     return res.status(200).json(filteredCars);
