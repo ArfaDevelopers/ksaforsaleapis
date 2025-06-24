@@ -347,7 +347,7 @@ router.post("/add-user", async (req, res) => {
 router.get("/cars", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
-    const regionId = req.query.regionId;
+    const regionId = req.query.regionId; // regionId from query string
 
     const carsSnapshot = await db.collection("Cars").get();
     const cars = carsSnapshot.docs
@@ -360,24 +360,27 @@ router.get("/cars", async (req, res) => {
         return isActive !== true && isActive !== "true"; // exclude only active cars
       });
 
-    // Filter by searchText (title or subCategories)
-    let filteredCars = searchText
-      ? cars.filter((car) => {
-          const titleMatch = car.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(car.subCategories)
-            ? car.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : cars;
+    let filteredCars = cars;
 
-    // Further filter by regionId if provided
+    // 🔍 Apply searchText filter
+    if (searchText) {
+      filteredCars = filteredCars.filter((car) => {
+        const titleMatch = car.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(car.subCategories)
+          ? car.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Apply regionId filter if provided
     if (regionId) {
-      filteredCars = filteredCars.filter(
-        (car) => String(car.regionId) === String(regionId)
-      );
+      filteredCars = filteredCars.filter((car) => {
+        // Normalize to string to compare safely
+        return String(car.regionId) === String(regionId);
+      });
     }
 
     return res.status(200).json(filteredCars);
