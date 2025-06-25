@@ -473,12 +473,15 @@ router.get("/PETANIMALCOMP", async (req, res) => {
     return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
   }
 });
-
 router.get("/ELECTRONICS", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("ELECTRONICS").get();
+
     const electronics = snapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -489,17 +492,41 @@ router.get("/ELECTRONICS", async (req, res) => {
         return isActive !== true && isActive !== "true";
       });
 
-    const filtered = searchText
-      ? electronics.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : electronics;
+    let filtered = electronics;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -507,6 +534,40 @@ router.get("/ELECTRONICS", async (req, res) => {
     return res.status(500).json({ error: "Error fetching ELECTRONICS" });
   }
 });
+
+// router.get("/ELECTRONICS", async (req, res) => {
+//   try {
+//     const searchText = req.query.searchText?.toLowerCase();
+
+//     const snapshot = await db.collection("ELECTRONICS").get();
+//     const electronics = snapshot.docs
+//       .map((doc) => ({
+//         id: doc.id,
+//         ...doc.data(),
+//       }))
+//       .filter((item) => {
+//         const isActive = item.isActive;
+//         return isActive !== true && isActive !== "true";
+//       });
+
+//     const filtered = searchText
+//       ? electronics.filter((item) => {
+//           const titleMatch = item.title?.toLowerCase().includes(searchText);
+//           const subCategoriesMatch = Array.isArray(item.subCategories)
+//             ? item.subCategories.some((cat) =>
+//                 cat.toLowerCase().includes(searchText)
+//               )
+//             : false;
+//           return titleMatch || subCategoriesMatch;
+//         })
+//       : electronics;
+
+//     return res.status(200).json(filtered);
+//   } catch (error) {
+//     console.error("Error fetching ELECTRONICS:", error);
+//     return res.status(500).json({ error: "Error fetching ELECTRONICS" });
+//   }
+// });
 
 router.get("/REALESTATECOMP", async (req, res) => {
   try {
