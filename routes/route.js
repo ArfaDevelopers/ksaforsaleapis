@@ -443,8 +443,12 @@ router.get("/cars", async (req, res) => {
 router.get("/PETANIMALCOMP", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("PETANIMALCOMP").get();
+
     const data = snapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -452,20 +456,44 @@ router.get("/PETANIMALCOMP", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true";
+        return isActive !== true && isActive !== "true"; // only inactive
       });
 
-    const filtered = searchText
-      ? data.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : data;
+    let filtered = data;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -473,6 +501,7 @@ router.get("/PETANIMALCOMP", async (req, res) => {
     return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
   }
 });
+
 router.get("/ELECTRONICS", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
@@ -572,8 +601,12 @@ router.get("/ELECTRONICS", async (req, res) => {
 router.get("/REALESTATECOMP", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("REALESTATECOMP").get();
+
     const data = snapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -581,20 +614,44 @@ router.get("/REALESTATECOMP", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true";
+        return isActive !== true && isActive !== "true"; // exclude active items
       });
 
-    const filtered = searchText
-      ? data.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : data;
+    let filtered = data;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -606,8 +663,12 @@ router.get("/REALESTATECOMP", async (req, res) => {
 router.get("/JOBBOARD", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("JOBBOARD").get();
+
     const jobBoardItems = snapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -615,20 +676,44 @@ router.get("/JOBBOARD", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true";
+        return isActive !== true && isActive !== "true"; // only inactive items
       });
 
-    const filtered = searchText
-      ? jobBoardItems.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : jobBoardItems;
+    let filtered = jobBoardItems;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -640,8 +725,12 @@ router.get("/JOBBOARD", async (req, res) => {
 router.get("/FASHION", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("FASHION").get();
+
     const fashionItems = snapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -652,17 +741,41 @@ router.get("/FASHION", async (req, res) => {
         return isActive !== true && isActive !== "true"; // only inactive
       });
 
-    const filtered = searchText
-      ? fashionItems.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : fashionItems;
+    let filtered = fashionItems;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -670,11 +783,16 @@ router.get("/FASHION", async (req, res) => {
     return res.status(500).json({ error: "Error fetching FASHION" });
   }
 });
+
 router.get("/HEALTHCARE", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("HEALTHCARE").get();
+
     const healthcareItems = snapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -682,20 +800,44 @@ router.get("/HEALTHCARE", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true";
+        return isActive !== true && isActive !== "true"; // only inactive
       });
 
-    const filtered = searchText
-      ? healthcareItems.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : healthcareItems;
+    let filtered = healthcareItems;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -703,11 +845,16 @@ router.get("/HEALTHCARE", async (req, res) => {
     return res.status(500).json({ error: "Error fetching HEALTHCARE" });
   }
 });
+
 router.get("/TRAVEL", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("TRAVEL").get();
+
     const data = snapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -718,17 +865,41 @@ router.get("/TRAVEL", async (req, res) => {
         return isActive !== true && isActive !== "true";
       });
 
-    const filtered = searchText
-      ? data.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : data;
+    let filtered = data;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -759,8 +930,12 @@ router.get("/TRAVEL", async (req, res) => {
 router.get("/SPORTSGAMESComp", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("SPORTSGAMESComp").get();
+
     const data = snapshot.docs
       .map((doc) => ({
         id: doc.id,
@@ -768,20 +943,44 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true";
+        return isActive !== true && isActive !== "true"; // Exclude active items
       });
 
-    const filtered = searchText
-      ? data.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : data;
+    let filtered = data;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -793,29 +992,57 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
 router.get("/Education", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const EducationSnapshot = await db.collection("Education").get();
+
     const Education = EducationSnapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
-      .filter((car) => {
-        const isActive = car.isActive;
+      .filter((item) => {
+        const isActive = item.isActive;
         return isActive !== true && isActive !== "true";
       });
 
-    const filtered = searchText
-      ? Education.filter((item) => {
-          const titleMatch = item.title?.toLowerCase().includes(searchText);
-          const subCategoriesMatch = Array.isArray(item.subCategories)
-            ? item.subCategories.some((cat) =>
-                cat.toLowerCase().includes(searchText)
-              )
-            : false;
-          return titleMatch || subCategoriesMatch;
-        })
-      : Education;
+    let filtered = Education;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
