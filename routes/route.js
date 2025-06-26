@@ -454,7 +454,7 @@ router.get("/cars", async (req, res) => {
       }))
       .filter((car) => {
         const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude only active cars
+        return isActive !== true && isActive !== "true"; // exclude active cars
       });
 
     let filteredCars = cars;
@@ -493,7 +493,7 @@ router.get("/cars", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filteredCars.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -504,7 +504,7 @@ router.get("/cars", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending order
+      return bTime - aTime; // Newest first
     });
 
     return res.status(200).json(filteredCars);
@@ -606,7 +606,7 @@ router.get("/ELECTRONICS", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true";
+        return isActive !== true && isActive !== "true"; // Exclude active
       });
 
     let filtered = electronics;
@@ -645,7 +645,7 @@ router.get("/ELECTRONICS", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -656,7 +656,7 @@ router.get("/ELECTRONICS", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending order
+      return bTime - aTime; // Descending (newest first)
     });
 
     return res.status(200).json(filtered);
