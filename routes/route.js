@@ -569,7 +569,7 @@ router.get("/PETANIMALCOMP", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -580,7 +580,7 @@ router.get("/PETANIMALCOMP", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending by createdAt
+      return bTime - aTime; // Descending (newest first)
     });
 
     return res.status(200).json(filtered);
@@ -755,7 +755,7 @@ router.get("/REALESTATECOMP", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -766,7 +766,7 @@ router.get("/REALESTATECOMP", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending order
+      return bTime - aTime; // Descending order
     });
 
     return res.status(200).json(filtered);
@@ -831,7 +831,7 @@ router.get("/JOBBOARD", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -842,7 +842,7 @@ router.get("/JOBBOARD", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending order
+      return bTime - aTime; // Descending by createdAt
     });
 
     return res.status(200).json(filtered);
@@ -907,7 +907,7 @@ router.get("/FASHION", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -918,7 +918,7 @@ router.get("/FASHION", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending order
+      return bTime - aTime; // Newest first
     });
 
     return res.status(200).json(filtered);
@@ -983,7 +983,7 @@ router.get("/HEALTHCARE", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -994,7 +994,7 @@ router.get("/HEALTHCARE", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending by createdAt
+      return bTime - aTime; // Newest first
     });
 
     return res.status(200).json(filtered);
@@ -1059,18 +1059,18 @@ router.get("/TRAVEL", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending by createdAt
+      return bTime - aTime; // Descending
     });
 
     return res.status(200).json(filtered);
@@ -1115,7 +1115,7 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // Exclude active items
+        return isActive !== true && isActive !== "true"; // Only inactive
       });
 
     let filtered = data;
@@ -1154,18 +1154,18 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending by createdAt
+      return bTime - aTime; // Descending (newest first)
     });
 
     return res.status(200).json(filtered);
@@ -1191,7 +1191,7 @@ router.get("/Education", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true";
+        return isActive !== true && isActive !== "true"; // Only inactive
       });
 
     let filtered = Education;
@@ -1230,18 +1230,18 @@ router.get("/Education", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    // ✅ Sort: Featured Ads first, then by createdAt DESCENDING (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return aTime - bTime; // Ascending by creation time
+      return bTime - aTime; // DESCENDING
     });
 
     return res.status(200).json(filtered);
