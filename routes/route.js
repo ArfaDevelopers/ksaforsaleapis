@@ -344,6 +344,101 @@ router.post("/add-user", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// router.get("/cars", async (req, res) => {
+//   try {
+//     const searchText = req.query.searchText?.toLowerCase();
+//     const regionId = req.query.regionId;
+//     const CITY_ID = req.query.CITY_ID;
+//     const DISTRICT_ID = req.query.DISTRICT_ID;
+
+//     const carsSnapshot = await db.collection("Cars").get();
+//     const cars = carsSnapshot.docs
+//       .map((doc) => ({
+//         id: doc.id,
+//         ...doc.data(),
+//       }))
+//       .filter((car) => {
+//         const isActive = car.isActive;
+//         return isActive !== true && isActive !== "true"; // exclude only active cars
+//       });
+
+//     let filteredCars = cars;
+
+//     // 🔍 Filter by searchText
+//     if (searchText) {
+//       filteredCars = filteredCars.filter((car) => {
+//         const titleMatch = car.title?.toLowerCase().includes(searchText);
+//         const subCategoriesMatch = Array.isArray(car.subCategories)
+//           ? car.subCategories.some((cat) =>
+//               cat.toLowerCase().includes(searchText)
+//             )
+//           : false;
+//         return titleMatch || subCategoriesMatch;
+//       });
+//     }
+
+//     // ✅ Filter by regionId
+//     if (regionId) {
+//       filteredCars = filteredCars.filter(
+//         (car) => String(car.regionId) === String(regionId)
+//       );
+//     }
+
+//     // ✅ Filter by CITY_ID
+//     if (CITY_ID) {
+//       filteredCars = filteredCars.filter(
+//         (car) => String(car.CITY_ID) === String(CITY_ID)
+//       );
+//     }
+
+//     // ✅ Filter by DISTRICT_ID
+//     if (DISTRICT_ID) {
+//       filteredCars = filteredCars.filter(
+//         (car) => String(car.District_ID) === String(DISTRICT_ID)
+//       );
+//     }
+
+//     return res.status(200).json(filteredCars);
+//   } catch (error) {
+//     console.error("Error fetching cars:", error);
+//     return res.status(500).json({ error: "Error fetching cars" });
+//   }
+// });
+
+// router.get("/cars", async (req, res) => {
+//   try {
+//     const searchText = req.query.searchText?.toLowerCase(); // optional chaining and lowercase for case-insensitive comparison
+
+//     const carsSnapshot = await db.collection("Cars").get();
+//     const cars = carsSnapshot.docs
+//       .map((doc) => ({
+//         id: doc.id,
+//         ...doc.data(),
+//       }))
+//       .filter((car) => {
+//         const isActive = car.isActive;
+//         return isActive !== true && isActive !== "true"; // exclude only active cars
+//       });
+
+//     // If searchText is present, filter based on title or subCategories
+//     const filteredCars = searchText
+//       ? cars.filter((car) => {
+//           const titleMatch = car.title?.toLowerCase().includes(searchText);
+//           const subCategoriesMatch = Array.isArray(car.subCategories)
+//             ? car.subCategories.some((cat) =>
+//                 cat.toLowerCase().includes(searchText)
+//               )
+//             : false;
+//           return titleMatch || subCategoriesMatch;
+//         })
+//       : cars;
+
+//     return res.status(200).json(filteredCars);
+//   } catch (error) {
+//     console.error("Error fetching cars:", error);
+//     return res.status(500).json({ error: "Error fetching cars" });
+//   }
+// });
 router.get("/cars", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
@@ -398,47 +493,26 @@ router.get("/cars", async (req, res) => {
       );
     }
 
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filteredCars.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending order
+    });
+
     return res.status(200).json(filteredCars);
   } catch (error) {
     console.error("Error fetching cars:", error);
     return res.status(500).json({ error: "Error fetching cars" });
   }
 });
-
-// router.get("/cars", async (req, res) => {
-//   try {
-//     const searchText = req.query.searchText?.toLowerCase(); // optional chaining and lowercase for case-insensitive comparison
-
-//     const carsSnapshot = await db.collection("Cars").get();
-//     const cars = carsSnapshot.docs
-//       .map((doc) => ({
-//         id: doc.id,
-//         ...doc.data(),
-//       }))
-//       .filter((car) => {
-//         const isActive = car.isActive;
-//         return isActive !== true && isActive !== "true"; // exclude only active cars
-//       });
-
-//     // If searchText is present, filter based on title or subCategories
-//     const filteredCars = searchText
-//       ? cars.filter((car) => {
-//           const titleMatch = car.title?.toLowerCase().includes(searchText);
-//           const subCategoriesMatch = Array.isArray(car.subCategories)
-//             ? car.subCategories.some((cat) =>
-//                 cat.toLowerCase().includes(searchText)
-//               )
-//             : false;
-//           return titleMatch || subCategoriesMatch;
-//         })
-//       : cars;
-
-//     return res.status(200).json(filteredCars);
-//   } catch (error) {
-//     console.error("Error fetching cars:", error);
-//     return res.status(500).json({ error: "Error fetching cars" });
-//   }
-// });
 
 router.get("/PETANIMALCOMP", async (req, res) => {
   try {
