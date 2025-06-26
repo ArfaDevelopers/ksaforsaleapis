@@ -569,6 +569,20 @@ router.get("/PETANIMALCOMP", async (req, res) => {
       );
     }
 
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending by createdAt
+    });
+
     return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching PETANIMALCOMP:", error);
@@ -630,6 +644,20 @@ router.get("/ELECTRONICS", async (req, res) => {
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
+
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending order
+    });
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -727,6 +755,20 @@ router.get("/REALESTATECOMP", async (req, res) => {
       );
     }
 
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending order
+    });
+
     return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching REALESTATECOMP:", error);
@@ -788,6 +830,20 @@ router.get("/JOBBOARD", async (req, res) => {
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
+
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending order
+    });
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -851,6 +907,20 @@ router.get("/FASHION", async (req, res) => {
       );
     }
 
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending order
+    });
+
     return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching FASHION:", error);
@@ -913,6 +983,20 @@ router.get("/HEALTHCARE", async (req, res) => {
       );
     }
 
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending by createdAt
+    });
+
     return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching HEALTHCARE:", error);
@@ -936,7 +1020,7 @@ router.get("/TRAVEL", async (req, res) => {
       }))
       .filter((item) => {
         const isActive = item.isActive;
-        return isActive !== true && isActive !== "true";
+        return isActive !== true && isActive !== "true"; // Only inactive items
       });
 
     let filtered = data;
@@ -974,6 +1058,20 @@ router.get("/TRAVEL", async (req, res) => {
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
+
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending by createdAt
+    });
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -1056,6 +1154,20 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       );
     }
 
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured Ads first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending by createdAt
+    });
+
     return res.status(200).json(filtered);
   } catch (error) {
     console.error("Error fetching SPORTSGAMESComp:", error);
@@ -1117,6 +1229,20 @@ router.get("/Education", async (req, res) => {
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
+
+    // ✅ Sort: Featured Ads first, then by createdAt ascending
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured; // Featured first
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return aTime - bTime; // Ascending by creation time
+    });
 
     return res.status(200).json(filtered);
   } catch (error) {
