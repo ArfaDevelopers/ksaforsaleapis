@@ -513,6 +513,40 @@ router.get("/cars", async (req, res) => {
     return res.status(500).json({ error: "Error fetching cars" });
   }
 });
+router.get("/commercial-ads", async (req, res) => {
+  try {
+    const adsSnapshot = await db.collection("CommercialAdscom").get();
+
+    const ads = adsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      const rawTime = data.timeAgo;
+
+      // Handle Firestore timestamp or ISO string
+      let createdTime;
+      if (rawTime?._seconds) {
+        createdTime = new Date(rawTime._seconds * 1000);
+      } else if (typeof rawTime === "string") {
+        createdTime = new Date(rawTime);
+      } else {
+        createdTime = new Date(0); // fallback to epoch if unknown format
+      }
+
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: createdTime,
+      };
+    });
+
+    // 🔽 Sort by createdAt DESC (latest first)
+    ads.sort((a, b) => b.createdAt - a.createdAt);
+
+    return res.status(200).json(ads);
+  } catch (error) {
+    console.error("Error fetching commercial ads:", error);
+    return res.status(500).json({ error: "Error fetching commercial ads" });
+  }
+});
 
 router.get("/PETANIMALCOMP", async (req, res) => {
   try {
