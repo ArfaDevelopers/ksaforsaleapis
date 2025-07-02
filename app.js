@@ -685,6 +685,50 @@ app.post("/api/charge", async (req, res) => {
     });
   }
 });
+// Your existing imports here...
+app.post("/api/chargestripe", async (req, res) => {
+  try {
+    const { paymentMethodId } = req.body;
+
+    if (!paymentMethodId) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Missing payment method ID." });
+    }
+
+    const amount = 10; // $10 fixed charge
+    const convertedAmount = Math.round(amount * 100); // Convert to cents
+
+    // Create a PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: convertedAmount,
+      currency: "usd",
+      payment_method: paymentMethodId,
+      confirm: true,
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: "never",
+      },
+    });
+
+    if (paymentIntent.status === "succeeded") {
+      // Save to Firestore
+      await db.collection("Payments").add({
+        amount,
+        paymentStatus: paymentIntent.status,
+        paymentIntentId: paymentIntent.id,
+        createdAt: new Date().toISOString(),
+      });
+
+      return res.status(200).json({ success: true });
+    } else {
+      return res.status(400).json({ success: false, error: "Payment failed." });
+    }
+  } catch (error) {
+    console.error("Payment error:", error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // app.post("/api/charge", async (req, res) => {
 //   try {
