@@ -117,5 +117,74 @@ router.get("/listings", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+router.get("/bookmarked-listings", async (req, res) => {
+  try {
+    const { userId, sortOrder = "Newest", page = 1, limit = 10 } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId in query params" });
+    }
+
+    const currentPage = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+
+    const COLLECTIONS = [
+      "SPORTSGAMESComp",
+      "REALESTATECOMP",
+      "Cars",
+      "ELECTRONICS",
+      "Education",
+      "FASHION",
+      "HEALTHCARE",
+      "JOBBOARD",
+      "MAGAZINESCOMP",
+      "PETANIMALCOMP",
+      "TRAVEL",
+    ];
+
+    const fetchPromises = COLLECTIONS.map(async (collectionName) => {
+      const snapshot = await db
+        .collection(collectionName)
+        .where("userId", "==", userId)
+        .where("bookmarked", "==", true)
+        .get();
+
+      return snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        category: collectionName,
+        isActive: doc.data().isActive ?? false,
+        createdAt: doc.data().createdAt || { seconds: 0 },
+        _collection: collectionName,
+      }));
+    });
+
+    const results = await Promise.all(fetchPromises);
+    const allData = results.flat();
+
+    // Sort
+    allData.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?.seconds || b.createdAt?._seconds || 0;
+      return sortOrder === "Oldest" ? aTime - bTime : bTime - aTime;
+    });
+
+    // Paginate
+    const total = allData.length;
+    const start = (currentPage - 1) * pageSize;
+    const paginatedData = allData.slice(start, start + pageSize);
+
+    return res.status(200).json({
+      total,
+      page: currentPage,
+      limit: pageSize,
+      totalPages: Math.ceil(total / pageSize),
+      data: paginatedData,
+    });
+  } catch (error) {
+    console.error("Error fetching bookmarked listings:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 module.exports = router;
