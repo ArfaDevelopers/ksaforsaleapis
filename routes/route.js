@@ -1716,7 +1716,6 @@ router.get("/listings", async (req, res) => {
       return res.status(400).json({ error: "Missing userId in query params" });
     }
 
-    // Defined inside route
     const COLLECTIONS = [
       "SPORTSGAMESComp",
       "REALESTATECOMP",
@@ -1731,30 +1730,27 @@ router.get("/listings", async (req, res) => {
       "TRAVEL",
     ];
 
-    let combinedData = [];
+    const allData = [];
 
-    for (const collectionName of COLLECTIONS) {
-      const snapshot = await db.collection(collectionName).get();
-
-      const data = snapshot.docs.map((doc) => {
+    for (const name of COLLECTIONS) {
+      const snapshot = await db.collection(name).get();
+      snapshot.forEach((doc) => {
         const docData = doc.data();
-        return {
-          id: doc.id,
-          ...docData,
-          isActive: docData.isActive ?? false,
-          _collection: collectionName,
-        };
+        if (docData.userId === userId) {
+          allData.push({
+            id: doc.id,
+            ...docData,
+            isActive: docData.isActive ?? false,
+            _collection: name,
+          });
+        }
       });
-
-      combinedData.push(...data);
     }
 
-    const userListings = combinedData.filter((item) => item.userId === userId);
-
-    return res.status(200).json(userListings);
-  } catch (error) {
-    console.error("Error fetching listings:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(200).json(allData);
+  } catch (err) {
+    console.error("Error in /listings:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 // Send OTP
