@@ -686,11 +686,15 @@ app.post("/api/charge", async (req, res) => {
   }
 });
 // Your existing imports here...
+
 app.post("/api/chargestripe", async (req, res) => {
+  console.log("Received payment request:", req.body);
+
   try {
     const { paymentMethodId } = req.body;
 
     if (!paymentMethodId) {
+      console.log("Missing payment method ID");
       return res
         .status(400)
         .json({ success: false, error: "Missing payment method ID." });
@@ -698,6 +702,8 @@ app.post("/api/chargestripe", async (req, res) => {
 
     const amount = 10; // $10 fixed charge
     const convertedAmount = Math.round(amount * 100); // Convert to cents
+
+    console.log("Creating payment intent for amount:", convertedAmount);
 
     // Create a PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -711,6 +717,8 @@ app.post("/api/chargestripe", async (req, res) => {
       },
     });
 
+    console.log("Payment intent status:", paymentIntent.status);
+
     if (paymentIntent.status === "succeeded") {
       // Save to Firestore
       await db.collection("Payments").add({
@@ -720,13 +728,23 @@ app.post("/api/chargestripe", async (req, res) => {
         createdAt: new Date().toISOString(),
       });
 
+      console.log("Payment successful and saved to Firestore");
       return res.status(200).json({ success: true });
     } else {
-      return res.status(400).json({ success: false, error: "Payment failed." });
+      console.log("Payment failed with status:", paymentIntent.status);
+      return res.status(400).json({
+        success: false,
+        error: "Payment failed.",
+        status: paymentIntent.status,
+      });
     }
   } catch (error) {
-    console.error("Payment error:", error.message);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error("Payment error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      type: error.type || "unknown_error",
+    });
   }
 });
 
