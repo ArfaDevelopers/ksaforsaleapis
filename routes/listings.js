@@ -62,8 +62,7 @@ router.get("/listings", async (req, res) => {
     }
 
     const LIMIT = 10;
-    const currentPage = parseInt(page);
-
+    const currentPage = parseInt(page, 10);
     const COLLECTIONS = [
       "SPORTSGAMESComp",
       "REALESTATECOMP",
@@ -78,24 +77,24 @@ router.get("/listings", async (req, res) => {
       "TRAVEL",
     ];
 
-    let allData = [];
+    const fetchPromises = COLLECTIONS.map(async (collectionName) => {
+      const snapshot = await db
+        .collection(collectionName)
+        .where("userId", "==", userId)
+        .get();
 
-    for (const collectionName of COLLECTIONS) {
-      const snapshot = await db.collection(collectionName).get();
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.userId === userId) {
-          allData.push({
-            id: doc.id,
-            ...data,
-            isActive: data.isActive ?? false,
-            _collection: collectionName,
-          });
-        }
-      });
-    }
+      return snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        isActive: doc.data().isActive ?? false,
+        _collection: collectionName,
+      }));
+    });
 
-    // 🧠 Sort by createdAt._seconds based on sortOrder
+    const results = await Promise.all(fetchPromises);
+    const allData = results.flat();
+
+    // Sort
     allData.sort((a, b) => {
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
@@ -104,8 +103,7 @@ router.get("/listings", async (req, res) => {
 
     const total = allData.length;
     const start = (currentPage - 1) * LIMIT;
-    const end = start + LIMIT;
-    const paginatedData = allData.slice(start, end);
+    const paginatedData = allData.slice(start, start + LIMIT);
 
     return res.status(200).json({
       total,
