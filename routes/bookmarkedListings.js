@@ -52,7 +52,6 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
-
 router.get("/bookmarked-listings", async (req, res) => {
   try {
     const { userId, sortOrder = "Newest", page = 1, limit = 10 } = req.query;
@@ -98,17 +97,20 @@ router.get("/bookmarked-listings", async (req, res) => {
     const results = await Promise.all(fetchPromises);
     const allData = results.flat();
 
+    // ✅ Filter out items where isActive is false
+    const activeData = allData.filter((item) => item.isActive === true);
+
     // Sort
-    allData.sort((a, b) => {
+    activeData.sort((a, b) => {
       const aTime = a.createdAt?.seconds || a.createdAt?._seconds || 0;
       const bTime = b.createdAt?.seconds || b.createdAt?._seconds || 0;
       return sortOrder === "Oldest" ? aTime - bTime : bTime - aTime;
     });
 
     // Paginate
-    const total = allData.length;
+    const total = activeData.length;
     const start = (currentPage - 1) * pageSize;
-    const paginatedData = allData.slice(start, start + pageSize);
+    const paginatedData = activeData.slice(start, start + pageSize);
 
     return res.status(200).json({
       total,
