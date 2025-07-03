@@ -1730,29 +1730,31 @@ router.get("/listings", async (req, res) => {
       "TRAVEL",
     ];
 
-    const allData = [];
+    const combinedData = [];
 
-    for (const name of COLLECTIONS) {
-      const snapshot = await db.collection(name).get();
+    for (const collectionName of COLLECTIONS) {
+      const snapshot = await db.collection(collectionName).get();
+
       snapshot.forEach((doc) => {
-        const docData = doc.data();
-        if (docData.userId === userId) {
-          allData.push({
+        const data = doc.data();
+        if (data.userId === userId) {
+          combinedData.push({
             id: doc.id,
-            ...docData,
-            isActive: docData.isActive ?? false,
-            _collection: name,
+            ...data,
+            isActive: data.isActive ?? false,
+            _collection: collectionName,
           });
         }
       });
     }
 
-    return res.status(200).json(allData);
-  } catch (err) {
-    console.error("Error in /listings:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(200).json(combinedData);
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
 //   const { phone } = req.body;
