@@ -55,7 +55,7 @@ const io = new Server(server, {
 
 router.get("/listings", async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, page = 1, limit = 10 } = req.query;
 
     if (!userId) {
       return res.status(400).json({ error: "Missing userId in query params" });
@@ -75,7 +75,7 @@ router.get("/listings", async (req, res) => {
       "TRAVEL",
     ];
 
-    const combinedData = [];
+    let combinedData = [];
 
     for (const collectionName of COLLECTIONS) {
       const snapshot = await db.collection(collectionName).get();
@@ -93,7 +93,24 @@ router.get("/listings", async (req, res) => {
       });
     }
 
-    return res.status(200).json(combinedData);
+    // Sort by createdAt if available (newest first)
+    combinedData.sort((a, b) => {
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    const total = combinedData.length;
+    const startIndex = (parseInt(page) - 1) * parseInt(limit);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedData = combinedData.slice(startIndex, endIndex);
+
+    return res.status(200).json({
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      data: paginatedData,
+    });
   } catch (error) {
     console.error("Error fetching listings:", error);
     return res.status(500).json({ error: "Internal Server Error" });
