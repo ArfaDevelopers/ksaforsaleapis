@@ -1708,52 +1708,6 @@ router.get("/trendingProducts", async (_, res) => {
     return res.status(500).json({ error: "Error fetching trending products" });
   }
 });
-router.get("/listings", async (req, res) => {
-  try {
-    const { userId } = req.query;
-
-    if (!userId) {
-      return res.status(400).json({ error: "Missing userId in query params" });
-    }
-
-    const COLLECTIONS = [
-      "SPORTSGAMESComp",
-      "REALESTATECOMP",
-      "Cars",
-      "ELECTRONICS",
-      "Education",
-      "FASHION",
-      "HEALTHCARE",
-      "JOBBOARD",
-      "MAGAZINESCOMP",
-      "PETANIMALCOMP",
-      "TRAVEL",
-    ];
-
-    const combinedData = [];
-
-    for (const collectionName of COLLECTIONS) {
-      const snapshot = await db.collection(collectionName).get();
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.userId === userId) {
-          combinedData.push({
-            id: doc.id,
-            ...data,
-            isActive: data.isActive ?? false,
-            _collection: collectionName,
-          });
-        }
-      });
-    }
-
-    return res.status(200).json(combinedData);
-  } catch (error) {
-    console.error("Error fetching listings:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 
 // Send OTP
 // router.post("/send-otp", async (req, res) => {
