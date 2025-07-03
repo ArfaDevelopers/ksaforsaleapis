@@ -55,11 +55,14 @@ const io = new Server(server, {
 
 router.get("/listings", async (req, res) => {
   try {
-    const { userId, page = 1, limit = 10 } = req.query;
+    const { userId, page = 1 } = req.query;
 
     if (!userId) {
       return res.status(400).json({ error: "Missing userId in query params" });
     }
+
+    const LIMIT = 10; // 🔒 Force limit to 10 on backend
+    const currentPage = parseInt(page);
 
     const COLLECTIONS = [
       "SPORTSGAMESComp",
@@ -75,15 +78,14 @@ router.get("/listings", async (req, res) => {
       "TRAVEL",
     ];
 
-    let combinedData = [];
+    let allData = [];
 
     for (const collectionName of COLLECTIONS) {
       const snapshot = await db.collection(collectionName).get();
-
       snapshot.forEach((doc) => {
         const data = doc.data();
         if (data.userId === userId) {
-          combinedData.push({
+          allData.push({
             id: doc.id,
             ...data,
             isActive: data.isActive ?? false,
@@ -93,22 +95,23 @@ router.get("/listings", async (req, res) => {
       });
     }
 
-    // Sort by createdAt if available (newest first)
-    combinedData.sort((a, b) => {
+    // Sort by createdAt
+    allData.sort((a, b) => {
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
       return bTime - aTime;
     });
 
-    const total = combinedData.length;
-    const startIndex = (parseInt(page) - 1) * parseInt(limit);
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedData = combinedData.slice(startIndex, endIndex);
+    const total = allData.length;
+    const start = (currentPage - 1) * LIMIT;
+    const end = start + LIMIT;
+    const paginatedData = allData.slice(start, end);
 
     return res.status(200).json({
       total,
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page: currentPage,
+      limit: LIMIT,
+      totalPages: Math.ceil(total / LIMIT),
       data: paginatedData,
     });
   } catch (error) {
