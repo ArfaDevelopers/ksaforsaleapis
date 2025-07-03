@@ -747,7 +747,55 @@ app.post("/api/chargestripe", async (req, res) => {
     });
   }
 });
+const COLLECTIONS = [
+  "SPORTSGAMESComp",
+  "REALESTATECOMP",
+  "Cars",
+  "ELECTRONICS",
+  "Education",
+  "FASHION",
+  "HEALTHCARE",
+  "JOBBOARD",
+  "MAGAZINESCOMP",
+  "PETANIMALCOMP",
+  "TRAVEL",
+];
 
+router.get("/listings", async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId in query params" });
+    }
+
+    let combinedData = [];
+
+    for (const collectionName of COLLECTIONS) {
+      const snapshot = await db.collection(collectionName).get();
+
+      const data = snapshot.docs.map((doc) => {
+        const docData = doc.data();
+        return {
+          id: doc.id,
+          ...docData,
+          isActive: docData.isActive ?? false,
+          _collection: collectionName,
+        };
+      });
+
+      combinedData.push(...data);
+    }
+
+    // Filter by userId only
+    const userListings = combinedData.filter((item) => item.userId === userId);
+
+    return res.status(200).json(userListings);
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 // app.post("/api/charge", async (req, res) => {
 //   try {
 //     const { name, userId, productId, amount, paymentStatus, paymentMethodId } =
