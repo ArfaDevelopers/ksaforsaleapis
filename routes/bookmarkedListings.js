@@ -98,7 +98,7 @@ router.get("/bookmarked-listings", async (req, res) => {
     const allData = results.flat();
 
     // ✅ Filter out items where isActive is false
-    const activeData = allData.filter((item) => item.isActive === true);
+    const activeData = allData.filter((item) => item.isActive === false);
 
     // Sort
     activeData.sort((a, b) => {
