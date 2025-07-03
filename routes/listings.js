@@ -55,13 +55,13 @@ const io = new Server(server, {
 
 router.get("/listings", async (req, res) => {
   try {
-    const { userId, page = 1 } = req.query;
+    const { userId, page = 1, sortOrder = "Newest" } = req.query;
 
     if (!userId) {
       return res.status(400).json({ error: "Missing userId in query params" });
     }
 
-    const LIMIT = 10; // 🔒 Force limit to 10 on backend
+    const LIMIT = 10;
     const currentPage = parseInt(page);
 
     const COLLECTIONS = [
@@ -95,11 +95,11 @@ router.get("/listings", async (req, res) => {
       });
     }
 
-    // Sort by createdAt
+    // 🧠 Sort by createdAt._seconds based on sortOrder
     allData.sort((a, b) => {
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime;
+      return sortOrder === "Oldest" ? aTime - bTime : bTime - aTime;
     });
 
     const total = allData.length;
