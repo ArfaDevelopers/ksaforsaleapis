@@ -8,6 +8,7 @@ const createError = require("http-errors");
 const admin = require("firebase-admin");
 const path = require("path");
 const fs = require("fs");
+const listingsRoute = require("./routes/listings"); // ✅ path to your listings route
 
 const { getFirestore } = require("firebase-admin/firestore");
 
@@ -51,6 +52,7 @@ app.use(compression());
 app.get("/", (_, res) => {
   return res.send("<a href='/route'>Click to redirect to /route</a>");
 });
+app.use("/api", listingsRoute); // your route is now GET /api/listings
 
 app.use("/route", require("./routes/route")); // Includes Twilio OTP + Firestore Cars
 const getOrCreateChat = async (sender, receiver) => {
@@ -729,55 +731,7 @@ app.post("/api/chargestripe", async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 });
-router.get("/listings", async (req, res) => {
-  try {
-    const { userId } = req.query;
 
-    if (!userId) {
-      return res.status(400).json({ error: "Missing userId in query params" });
-    }
-
-    // Defined inside route
-    const COLLECTIONS = [
-      "SPORTSGAMESComp",
-      "REALESTATECOMP",
-      "Cars",
-      "ELECTRONICS",
-      "Education",
-      "FASHION",
-      "HEALTHCARE",
-      "JOBBOARD",
-      "MAGAZINESCOMP",
-      "PETANIMALCOMP",
-      "TRAVEL",
-    ];
-
-    let combinedData = [];
-
-    for (const collectionName of COLLECTIONS) {
-      const snapshot = await db.collection(collectionName).get();
-
-      const data = snapshot.docs.map((doc) => {
-        const docData = doc.data();
-        return {
-          id: doc.id,
-          ...docData,
-          isActive: docData.isActive ?? false,
-          _collection: collectionName,
-        };
-      });
-
-      combinedData.push(...data);
-    }
-
-    const userListings = combinedData.filter((item) => item.userId === userId);
-
-    return res.status(200).json(userListings);
-  } catch (error) {
-    console.error("Error fetching listings:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 // app.post("/api/charge", async (req, res) => {
 //   try {
 //     const { name, userId, productId, amount, paymentStatus, paymentMethodId } =
@@ -1350,6 +1304,7 @@ app.use(function (req, res, next) {
   );
   next(createError(404));
 });
+
 const PORT = process.env.PORT || 9002;
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 
