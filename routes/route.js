@@ -1284,6 +1284,59 @@ router.get("/Education", async (req, res) => {
     return res.status(500).json({ error: "Error fetching Education" });
   }
 });
+router.get("/getItemById", async (req, res) => {
+  try {
+    const { callingFrom, id } = req.query;
+
+    if (!callingFrom || !id) {
+      return res.status(400).json({ error: "Missing callingFrom or id" });
+    }
+
+    // ✅ Complete mapping from frontend category to Firestore collection name
+    const collectionMap = {
+      automotive: "Cars",
+      Automotive: "Cars",
+      AutomotiveComp: "Cars",
+
+      Motors: "Cars",
+      RealEstate: "REALESTATECOMP",
+      Electronic: "ELECTRONICS",
+      Electronics: "ELECTRONICS",
+      Services: "TRAVEL",
+      Other: "Education",
+      Education: "Education",
+      "Pet & Animals": "PETANIMALCOMP",
+      "Sports & Game": "SPORTSGAMESComp",
+      "Fashion Style": "FASHION",
+      "Job Board": "JOBBOARD",
+      GamesSport: "SPORTSGAMESComp",
+      ComercialsAds: "ComercialsAds",
+      books: "books",
+    };
+
+    const collectionName = collectionMap[callingFrom];
+
+    if (!collectionName) {
+      return res.status(400).json({ error: "Invalid callingFrom value" });
+    }
+
+    const docSnap = await db.collection(collectionName).doc(id).get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+
+    const data = docSnap.data();
+
+    return res.status(200).json({
+      id: docSnap.id,
+      ...data,
+    });
+  } catch (error) {
+    console.error("Error fetching item by ID:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 // router.patch("/cars/:id/view", async (req, res) => {
 //   const carId = req.params.id;
