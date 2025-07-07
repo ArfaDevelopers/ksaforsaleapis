@@ -1299,17 +1299,20 @@ router.get("/getItemById", async (req, res) => {
       AutomotiveComp: "Cars",
 
       Motors: "Cars",
-      RealEstate: "REALESTATECOMP",
+      RealEstateComp: "REALESTATECOMP",
       Electronic: "ELECTRONICS",
-      Electronics: "ELECTRONICS",
-      Services: "TRAVEL",
+      ElectronicComp: "ELECTRONICS",
+      TravelComp: "TRAVEL",
+      HealthCareComp: "HEALTHCARE",
+
       Other: "Education",
       Education: "Education",
-      "Pet & Animals": "PETANIMALCOMP",
+      PetAnimalsComp: "PETANIMALCOMP",
       "Sports & Game": "SPORTSGAMESComp",
-      "Fashion Style": "FASHION",
-      "Job Board": "JOBBOARD",
-      GamesSport: "SPORTSGAMESComp",
+      FashionStyle: "FASHION",
+      JobBoard: "JOBBOARD",
+
+      SportGamesComp: "SPORTSGAMESComp",
       ComercialsAds: "ComercialsAds",
       books: "books",
     };
