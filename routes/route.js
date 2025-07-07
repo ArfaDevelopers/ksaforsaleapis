@@ -1300,15 +1300,21 @@ router.get("/getItemById", async (req, res) => {
 
       Motors: "Cars",
       RealEstateComp: "REALESTATECOMP",
+      RealEstate: "REALESTATECOMP",
+
       Electronic: "ELECTRONICS",
+
       ElectronicComp: "ELECTRONICS",
       TravelComp: "TRAVEL",
       HealthCareComp: "HEALTHCARE",
+      HealthCare: "HEALTHCARE",
 
       Other: "Education",
       Education: "Education",
       PetAnimalsComp: "PETANIMALCOMP",
       "Sports & Game": "SPORTSGAMESComp",
+      GamesSport: "SPORTSGAMESComp",
+
       FashionStyle: "FASHION",
       JobBoard: "JOBBOARD",
 
