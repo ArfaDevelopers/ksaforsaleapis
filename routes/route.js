@@ -1122,7 +1122,6 @@ router.get("/TRAVEL", async (req, res) => {
 
     const snapshot = await db.collection("TRAVEL").get();
     const now = Date.now();
-    // const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
     const ONE_MINUTE_MS = 1 * 60 * 1000;
 
     const data = await Promise.all(
@@ -1130,13 +1129,12 @@ router.get("/TRAVEL", async (req, res) => {
         const docData = doc.data();
         const featuredAt = docData.featuredAt?.toDate?.() || null;
 
-        // 🔄 Auto-expire featured ad after 7 days
+        // 🔄 Auto-expire featured ad after 1 minute
         if (
           docData.FeaturedAds === "Featured Ads" &&
           featuredAt &&
-          now - featuredAt.getTime() > SEVEN_DAYS_MS
+          now - featuredAt.getTime() > ONE_MINUTE_MS
         ) {
-          // Optional Firestore update
           await db.collection("TRAVEL").doc(doc.id).update({
             FeaturedAds: "Not Featured Ads",
             featuredAt: null,
@@ -1155,7 +1153,7 @@ router.get("/TRAVEL", async (req, res) => {
 
     const inactiveData = data.filter((item) => {
       const isActive = item.isActive;
-      return isActive !== true && isActive !== "true"; // Only inactive items
+      return isActive !== true && isActive !== "true";
     });
 
     let filtered = inactiveData;
@@ -1200,7 +1198,7 @@ router.get("/TRAVEL", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Newest first
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
