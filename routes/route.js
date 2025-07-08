@@ -2135,6 +2135,964 @@ router.post("/send-otp", async (req, res) => {
   }
 });
 
+router.get("/EducationCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("Education").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
+
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("Education").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching Education:", error);
+    return res.status(500).json({ error: "Error fetching Education" });
+  }
+});
+router.get("/carsCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const carsSnapshot = await db.collection("Cars").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const cars = await Promise.all(
+      carsSnapshot.docs.map(async (doc) => {
+        const carData = doc.data();
+        const createdAt = carData.createdAt?.toDate?.() || null;
+
+        // Auto-expire Featured Ads after 7 days
+        if (
+          carData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("Cars").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          carData.FeaturedAds = "Not Featured Ads";
+          carData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...carData,
+        };
+      })
+    );
+
+    // Filter only inactive cars
+    const inactiveCars = cars.filter((car) => {
+      const isActive = car.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filteredCars = inactiveCars;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filteredCars = filteredCars.filter((car) => {
+        const titleMatch = car.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(car.subCategories)
+          ? car.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filteredCars = filteredCars.filter(
+        (car) => String(car.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filteredCars = filteredCars.filter(
+        (car) => String(car.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filteredCars = filteredCars.filter(
+        (car) => String(car.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    // ✅ Sort: Featured Ads first, then by createdAt descending
+    filteredCars.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    // return res.status(200).json(filteredCars);
+    return res.status(200).json(filteredCars.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching cars:", error);
+    return res.status(500).json({ error: "Error fetching cars" });
+  }
+});
+router.get("/ELECTRONICSCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("ELECTRONICS").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const createdAt = docData.createdAt?.toDate?.() || null;
+
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("ELECTRONICS").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveItems = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveItems;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    // ✅ Sort: Featured Ads first, then newest
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching ELECTRONICS:", error);
+    return res.status(500).json({ error: "Error fetching ELECTRONICS" });
+  }
+});
+router.get("/FASHIONCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("FASHION").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const createdAt = docData.createdAt?.toDate?.() || null;
+
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("FASHION").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveItems = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveItems;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    // ✅ Sort: Featured Ads first, then newest
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching FASHION:", error);
+    return res.status(500).json({ error: "Error fetching FASHION" });
+  }
+});
+
+router.get("/HEALTHCARECarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("HEALTHCARE").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
+
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("HEALTHCARE").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching HEALTHCARE:", error);
+    return res.status(500).json({ error: "Error fetching HEALTHCARE" });
+  }
+});
+router.get("/JOBBOARDCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("JOBBOARD").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
+
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("JOBBOARD").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching JOBBOARD:", error);
+    return res.status(500).json({ error: "Error fetching JOBBOARD" });
+  }
+});
+router.get("/REALESTATECOMPCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("REALESTATECOMP").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
+
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("REALESTATECOMP").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching REALESTATECOMP:", error);
+    return res.status(500).json({ error: "Error fetching REALESTATECOMP" });
+  }
+});
+router.get("/TRAVELCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("TRAVEL").get();
+    const now = Date.now();
+    // const ONE_MINUTE_MS = 1 * 60 * 1000;
+    const ONE_MINUTE_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
+
+        // ✅ Auto-expire if 1 minute has passed since featuredAt
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_MINUTE_MS
+        ) {
+          // Update Firestore document
+          await db.collection("TRAVEL").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          // Update locally
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching TRAVEL:", error);
+    return res.status(500).json({ error: "Error fetching TRAVEL" });
+  }
+});
+router.get("/SPORTSGAMESCompCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("SPORTSGAMESComp").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
+
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("SPORTSGAMESComp").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching SPORTSGAMESComp:", error);
+    return res.status(500).json({ error: "Error fetching SPORTSGAMESComp" });
+  }
+});
+router.get("/PETANIMALCOMPCarousal", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const snapshot = await db.collection("PETANIMALCOMP").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const createdAt = docData.createdAt?.toDate?.() || null;
+
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("PETANIMALCOMP").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveItems = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveItems;
+
+    // 🔍 Filter by searchText
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter by regionId
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ Filter by CITY_ID
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Filter by DISTRICT_ID
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered.slice(0, 10));
+  } catch (error) {
+    console.error("Error fetching PETANIMALCOMP:", error);
+    return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
+  }
+});
 // Verify OTP
 router.post("/verify-otp", async (req, res) => {
   const { phone, code } = req.body;
