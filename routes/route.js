@@ -1127,7 +1127,7 @@ router.get("/TRAVEL", async (req, res) => {
     const data = await Promise.all(
       snapshot.docs.map(async (doc) => {
         const docData = doc.data();
-        const featuredAt = docData.featuredAt?.toDate?.() || null;
+        const featuredAt = docData.createdAt?.toDate?.() || null;
 
         // ✅ Auto-expire if 1 minute has passed since featuredAt
         if (
