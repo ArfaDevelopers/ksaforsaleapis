@@ -1129,17 +1129,19 @@ router.get("/TRAVEL", async (req, res) => {
         const docData = doc.data();
         const featuredAt = docData.featuredAt?.toDate?.() || null;
 
-        // 🔄 Auto-expire featured ad after 1 minute
+        // ✅ Auto-expire if 1 minute has passed since featuredAt
         if (
           docData.FeaturedAds === "Featured Ads" &&
           featuredAt &&
           now - featuredAt.getTime() > ONE_MINUTE_MS
         ) {
+          // Update Firestore document
           await db.collection("TRAVEL").doc(doc.id).update({
             FeaturedAds: "Not Featured Ads",
             featuredAt: null,
           });
 
+          // Update locally
           docData.FeaturedAds = "Not Featured Ads";
           docData.featuredAt = null;
         }
