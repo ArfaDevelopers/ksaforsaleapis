@@ -447,17 +447,43 @@ router.get("/cars", async (req, res) => {
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const carsSnapshot = await db.collection("Cars").get();
-    const cars = carsSnapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((car) => {
-        const isActive = car.isActive;
-        return isActive !== true && isActive !== "true"; // exclude active cars
-      });
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    let filteredCars = cars;
+    const cars = await Promise.all(
+      carsSnapshot.docs.map(async (doc) => {
+        const carData = doc.data();
+        const createdAt = carData.createdAt?.toDate?.() || null;
+
+        // Auto-expire Featured Ads after 7 days
+        if (
+          carData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("Cars").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          carData.FeaturedAds = "Not Featured Ads";
+          carData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...carData,
+        };
+      })
+    );
+
+    // Filter only inactive cars
+    const inactiveCars = cars.filter((car) => {
+      const isActive = car.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filteredCars = inactiveCars;
 
     // 🔍 Filter by searchText
     if (searchText) {
@@ -493,18 +519,18 @@ router.get("/cars", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
+    // ✅ Sort: Featured Ads first, then by createdAt descending
     filteredCars.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Newest first
+      return bTime - aTime;
     });
 
     return res.status(200).json(filteredCars);
@@ -513,6 +539,7 @@ router.get("/cars", async (req, res) => {
     return res.status(500).json({ error: "Error fetching cars" });
   }
 });
+
 router.get("/commercial-ads", async (req, res) => {
   try {
     const adsSnapshot = await db.collection("CommercialAdscom").get();
@@ -556,18 +583,41 @@ router.get("/PETANIMALCOMP", async (req, res) => {
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("PETANIMALCOMP").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const data = snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((item) => {
-        const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // only inactive
-      });
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const createdAt = docData.createdAt?.toDate?.() || null;
 
-    let filtered = data;
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("PETANIMALCOMP").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveItems = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveItems;
 
     // 🔍 Filter by searchText
     if (searchText) {
@@ -609,12 +659,12 @@ router.get("/PETANIMALCOMP", async (req, res) => {
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Descending (newest first)
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
@@ -632,18 +682,41 @@ router.get("/ELECTRONICS", async (req, res) => {
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("ELECTRONICS").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const electronics = snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((item) => {
-        const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // Exclude active
-      });
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const createdAt = docData.createdAt?.toDate?.() || null;
 
-    let filtered = electronics;
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("ELECTRONICS").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveItems = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveItems;
 
     // 🔍 Filter by searchText
     if (searchText) {
@@ -679,18 +752,18 @@ router.get("/ELECTRONICS", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt descending
+    // ✅ Sort: Featured Ads first, then newest
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Descending (newest first)
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
@@ -742,20 +815,42 @@ router.get("/REALESTATECOMP", async (req, res) => {
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("REALESTATECOMP").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const data = snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((item) => {
-        const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // exclude active items
-      });
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
 
-    let filtered = data;
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("REALESTATECOMP").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
 
-    // 🔍 Filter by searchText
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -768,39 +863,35 @@ router.get("/REALESTATECOMP", async (req, res) => {
       });
     }
 
-    // ✅ Filter by regionId
     if (regionId) {
       filtered = filtered.filter(
         (item) => String(item.regionId) === String(regionId)
       );
     }
 
-    // ✅ Filter by CITY_ID
     if (CITY_ID) {
       filtered = filtered.filter(
         (item) => String(item.CITY_ID) === String(CITY_ID)
       );
     }
 
-    // ✅ Filter by DISTRICT_ID
     if (DISTRICT_ID) {
       filtered = filtered.filter(
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Descending order
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
@@ -818,20 +909,42 @@ router.get("/JOBBOARD", async (req, res) => {
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("JOBBOARD").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const jobBoardItems = snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((item) => {
-        const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // only inactive items
-      });
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
 
-    let filtered = jobBoardItems;
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("JOBBOARD").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
 
-    // 🔍 Filter by searchText
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -844,39 +957,35 @@ router.get("/JOBBOARD", async (req, res) => {
       });
     }
 
-    // ✅ Filter by regionId
     if (regionId) {
       filtered = filtered.filter(
         (item) => String(item.regionId) === String(regionId)
       );
     }
 
-    // ✅ Filter by CITY_ID
     if (CITY_ID) {
       filtered = filtered.filter(
         (item) => String(item.CITY_ID) === String(CITY_ID)
       );
     }
 
-    // ✅ Filter by DISTRICT_ID
     if (DISTRICT_ID) {
       filtered = filtered.filter(
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Descending by createdAt
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
@@ -894,18 +1003,41 @@ router.get("/FASHION", async (req, res) => {
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("FASHION").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const fashionItems = snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((item) => {
-        const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // only inactive
-      });
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const createdAt = docData.createdAt?.toDate?.() || null;
 
-    let filtered = fashionItems;
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("FASHION").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveItems = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveItems;
 
     // 🔍 Filter by searchText
     if (searchText) {
@@ -941,18 +1073,18 @@ router.get("/FASHION", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
+    // ✅ Sort: Featured Ads first, then newest
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Newest first
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
@@ -970,20 +1102,42 @@ router.get("/HEALTHCARE", async (req, res) => {
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("HEALTHCARE").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const healthcareItems = snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((item) => {
-        const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // only inactive
-      });
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
 
-    let filtered = healthcareItems;
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("HEALTHCARE").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
 
-    // 🔍 Filter by searchText
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -996,39 +1150,35 @@ router.get("/HEALTHCARE", async (req, res) => {
       });
     }
 
-    // ✅ Filter by regionId
     if (regionId) {
       filtered = filtered.filter(
         (item) => String(item.regionId) === String(regionId)
       );
     }
 
-    // ✅ Filter by CITY_ID
     if (CITY_ID) {
       filtered = filtered.filter(
         (item) => String(item.CITY_ID) === String(CITY_ID)
       );
     }
 
-    // ✅ Filter by DISTRICT_ID
     if (DISTRICT_ID) {
       filtered = filtered.filter(
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
       if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured; // Featured Ads first
+        return bIsFeatured - aIsFeatured;
       }
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Newest first
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
@@ -1238,20 +1388,42 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
     const snapshot = await db.collection("SPORTSGAMESComp").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const data = snapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((item) => {
-        const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // Only inactive
-      });
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
 
-    let filtered = data;
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("SPORTSGAMESComp").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
 
-    // 🔍 Filter by searchText
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -1264,28 +1436,24 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       });
     }
 
-    // ✅ Filter by regionId
     if (regionId) {
       filtered = filtered.filter(
         (item) => String(item.regionId) === String(regionId)
       );
     }
 
-    // ✅ Filter by CITY_ID
     if (CITY_ID) {
       filtered = filtered.filter(
         (item) => String(item.CITY_ID) === String(CITY_ID)
       );
     }
 
-    // ✅ Filter by DISTRICT_ID
     if (DISTRICT_ID) {
       filtered = filtered.filter(
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -1296,7 +1464,7 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // Descending (newest first)
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
@@ -1313,21 +1481,43 @@ router.get("/Education", async (req, res) => {
     const CITY_ID = req.query.CITY_ID;
     const DISTRICT_ID = req.query.DISTRICT_ID;
 
-    const EducationSnapshot = await db.collection("Education").get();
+    const snapshot = await db.collection("Education").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    const Education = EducationSnapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .filter((item) => {
-        const isActive = item.isActive;
-        return isActive !== true && isActive !== "true"; // Only inactive
-      });
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
 
-    let filtered = Education;
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("Education").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
 
-    // 🔍 Filter by searchText
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -1340,28 +1530,24 @@ router.get("/Education", async (req, res) => {
       });
     }
 
-    // ✅ Filter by regionId
     if (regionId) {
       filtered = filtered.filter(
         (item) => String(item.regionId) === String(regionId)
       );
     }
 
-    // ✅ Filter by CITY_ID
     if (CITY_ID) {
       filtered = filtered.filter(
         (item) => String(item.CITY_ID) === String(CITY_ID)
       );
     }
 
-    // ✅ Filter by DISTRICT_ID
     if (DISTRICT_ID) {
       filtered = filtered.filter(
         (item) => String(item.District_ID) === String(DISTRICT_ID)
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt DESCENDING (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -1372,7 +1558,7 @@ router.get("/Education", async (req, res) => {
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime; // DESCENDING
+      return bTime - aTime;
     });
 
     return res.status(200).json(filtered);
@@ -1381,6 +1567,7 @@ router.get("/Education", async (req, res) => {
     return res.status(500).json({ error: "Error fetching Education" });
   }
 });
+
 router.get("/getItemById", async (req, res) => {
   try {
     const { callingFrom, id } = req.query;
