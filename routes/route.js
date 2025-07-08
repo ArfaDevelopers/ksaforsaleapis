@@ -1122,7 +1122,8 @@ router.get("/TRAVEL", async (req, res) => {
 
     const snapshot = await db.collection("TRAVEL").get();
     const now = Date.now();
-    const ONE_MINUTE_MS = 1 * 60 * 1000;
+    // const ONE_MINUTE_MS = 1 * 60 * 1000;
+    const ONE_MINUTE_MS = 7 * 24 * 60 * 60 * 1000;
 
     const data = await Promise.all(
       snapshot.docs.map(async (doc) => {
