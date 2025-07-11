@@ -41,41 +41,58 @@ const io = new Server(server, {
 });
 
 router.post("/relatedcars", async (req, res) => {
-  const { title } = req.body;
+  const { title, category } = req.body;
 
   if (!title || title.trim() === "") {
     return res.status(400).json({ error: "Title is required" });
   }
 
+  // Category to Collection mapping
+  const categoryMap = {
+    Motors: "Cars",
+    Electronics: "ELECTRONICS",
+    "Fashion Style": "FASHION",
+    "Home & Furnituer": "HEALTHCARE",
+    "Job Board": "JOBBOARD",
+    "Real Estate": "REALESTATECOMP",
+    Services: "TRAVEL",
+    "Sports & Game": "SPORTSGAMESComp",
+    "Pet & Animals": "PETANIMALCOMP",
+    Other: "Education",
+  };
+
+  const collectionName = categoryMap[category];
+
+  if (!collectionName) {
+    return res.status(400).json({ error: "Invalid category provided" });
+  }
+
   try {
-    const carsSnapshot = await db.collection("Cars").get();
+    const snapshot = await db.collection(collectionName).get();
     const titleLower = title.toLowerCase();
 
-    // Get cars with similar titles (basic text match)
-    const relatedCars = [];
+    const relatedItems = [];
 
-    carsSnapshot.forEach((doc) => {
-      const car = doc.data();
-      const carTitle = car.title?.toLowerCase() || "";
+    snapshot.forEach((doc) => {
+      const item = doc.data();
+      const itemTitle = item.title?.toLowerCase() || "";
 
       if (
-        carTitle.includes(titleLower) ||
-        titleLower.includes(carTitle) || // match both directions
-        titleLower.split(" ").some((word) => carTitle.includes(word))
+        itemTitle.includes(titleLower) ||
+        titleLower.includes(itemTitle) ||
+        titleLower.split(" ").some((word) => itemTitle.includes(word))
       ) {
-        relatedCars.push({ id: doc.id, ...car });
+        relatedItems.push({ id: doc.id, ...item });
       }
     });
 
-    // Optional: remove the exact match
-    const filtered = relatedCars.filter(
-      (car) => car.title.toLowerCase() !== titleLower
+    const filtered = relatedItems.filter(
+      (item) => item.title.toLowerCase() !== titleLower
     );
 
-    // Limit the result count (optional)
     return res.status(200).json(filtered.slice(0, 6));
   } catch (err) {
-    console.error("Error fetching related cars:", err);
+    console.error("Error fetching related items:", err);
     return res.status(500).json({ error: "Server error" });
   }
 });
