@@ -104,5 +104,45 @@ router.get("/listings", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+// Route: POST /related-cars
+router.post("/related-cars", async (req, res) => {
+  const { title } = req.body;
+
+  if (!title || title.trim() === "") {
+    return res.status(400).json({ error: "Title is required" });
+  }
+
+  try {
+    const carsSnapshot = await db.collection("Cars").get();
+    const titleLower = title.toLowerCase();
+
+    // Get cars with similar titles (basic text match)
+    const relatedCars = [];
+
+    carsSnapshot.forEach((doc) => {
+      const car = doc.data();
+      const carTitle = car.title?.toLowerCase() || "";
+
+      if (
+        carTitle.includes(titleLower) ||
+        titleLower.includes(carTitle) || // match both directions
+        titleLower.split(" ").some((word) => carTitle.includes(word))
+      ) {
+        relatedCars.push({ id: doc.id, ...car });
+      }
+    });
+
+    // Optional: remove the exact match
+    const filtered = relatedCars.filter(
+      (car) => car.title.toLowerCase() !== titleLower
+    );
+
+    // Limit the result count (optional)
+    return res.status(200).json(filtered.slice(0, 6));
+  } catch (err) {
+    console.error("Error fetching related cars:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
 
 module.exports = router;
