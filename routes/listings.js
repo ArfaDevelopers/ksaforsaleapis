@@ -104,6 +104,5 @@ router.get("/listings", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
-// Route: POST /related-cars
 
 module.exports = router;
