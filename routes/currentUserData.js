@@ -48,7 +48,10 @@ router.post("/userData", async (req, res) => {
 
   try {
     // ✅ Correct lowercase collection name
-    const userDoc = await db.collection("users").doc(userId).get();
+    const userDoc = await db
+      .collection("users")
+      .doc("KP1YqEjam3gC3osBxSiQBzfMKq83")
+      .get();
 
     if (!userDoc.exists) {
       return res.status(404).json({ error: "User not found" });
