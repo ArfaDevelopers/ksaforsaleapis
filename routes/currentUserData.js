@@ -48,7 +48,7 @@ router.post("/userData", async (req, res) => {
   }
 
   try {
-    const userDoc = await db.collection("Users").doc(userId).get();
+    const userDoc = await db.collection("users").doc(userId).get();
 
     if (!userDoc.exists) {
       return res.status(404).json({ error: "User not found" });
