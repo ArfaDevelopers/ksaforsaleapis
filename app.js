@@ -14,6 +14,7 @@ const bookmarkedListingsRouter = require("./routes/bookmarkedListings");
 
 const listingsRoute = require("./routes/listings"); // ✅ path to your listings route
 const relatedcarsRoute = require("./routes/relatedcars"); // ✅ path to your listings route
+const currentUserDataRoute = require("./routes/currentUserData"); // ✅ path to your listings route
 
 const { getFirestore } = require("firebase-admin/firestore");
 
@@ -60,6 +61,7 @@ app.get("/", (_, res) => {
 app.use("/api", listingsRoute); // your route is now GET /api/listings
 app.use("/api", fetchCarsRoute);
 app.use("/api", relatedcarsRoute); // your route is now GET /api/relatedcars
+app.use("/currentUserData", currentUserDataRoute); // your route is now GET /api/relatedcars
 
 app.use("/route", require("./routes/route")); // Includes Twilio OTP + Firestore Cars
 app.use("/api", bookmarkedListingsRouter); // So route is at /api/bookmarked-listings
