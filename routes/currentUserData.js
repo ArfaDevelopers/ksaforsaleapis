@@ -39,16 +39,16 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
-
 router.post("/userData", async (req, res) => {
-  const { userId } = req.body;
+  const { userId } = req.body; // ✅ not from Firebase Auth, but Firestore
 
   if (!userId) {
     return res.status(400).json({ error: "userId is required" });
   }
 
   try {
-    const userDoc = await db.collection("users").doc(userId).get();
+    // ✅ Fetch user document by document ID from Firestore
+    const userDoc = await db.collection("Users").doc(userId).get();
 
     if (!userDoc.exists) {
       return res.status(404).json({ error: "User not found" });
