@@ -41,17 +41,14 @@ const io = new Server(server, {
 });
 router.post("/userData", async (req, res) => {
   const { userId } = req.body;
-
+  console.log(userId, "userId__________");
   if (!userId) {
     return res.status(400).json({ error: "userId is required" });
   }
 
   try {
     // ✅ Correct lowercase collection name
-    const userDoc = await db
-      .collection("users")
-      .doc("KP1YqEjam3gC3osBxSiQBzfMKq83")
-      .get();
+    const userDoc = await db.collection("users").doc(userId).get();
 
     if (!userDoc.exists) {
       return res.status(404).json({ error: "User not found" });
