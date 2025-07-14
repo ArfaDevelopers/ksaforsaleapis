@@ -63,6 +63,7 @@ router.post("/FASHION", async (req, res) => {
         const docData = doc.data();
         const createdAt = docData.createdAt?.toDate?.() || null;
 
+        // ✅ Auto demote expired featured ads
         if (
           docData.FeaturedAds === "Featured Ads" &&
           createdAt &&
@@ -86,7 +87,7 @@ router.post("/FASHION", async (req, res) => {
 
     let filtered = data;
 
-    // ✅ searchText: match in title or subCategories
+    // ✅ Filter: Search Text (in title or subCategories)
     if (searchText) {
       const lowerText = searchText.toLowerCase();
       filtered = filtered.filter((item) => {
@@ -100,7 +101,7 @@ router.post("/FASHION", async (req, res) => {
       });
     }
 
-    // ✅ Basic Filters
+    // ✅ Filter: Region
     if (regionId) {
       filtered = filtered.filter(
         (item) => String(item.regionId) === String(regionId)
@@ -119,21 +120,25 @@ router.post("/FASHION", async (req, res) => {
       );
     }
 
-    // ✅ Dynamic Field Filters
+    // ✅ Filter: Featured Ads
     if (FeaturedAds) {
       filtered = filtered.filter((item) => item.FeaturedAds === FeaturedAds);
     }
 
+    // ✅ Filter: isActive (ensure consistent type matching)
     if (isActive !== undefined) {
       filtered = filtered.filter((item) => {
-        return String(item.isActive) === String(isActive);
+        const val = item.isActive;
+        return String(val) === String(isActive);
       });
     }
 
+    // ✅ Filter: Ad Type
     if (AdType) {
       filtered = filtered.filter((item) => item.AdType === AdType);
     }
 
+    // ✅ Filter: Created Date (ISO Date match)
     if (createdDate) {
       filtered = filtered.filter((item) => {
         const timestamp = item.createdAt?.seconds
@@ -143,14 +148,14 @@ router.post("/FASHION", async (req, res) => {
       });
     }
 
-    // ✅ Handle any other dynamic filters passed in body
+    // ✅ Apply any other dynamic filters
     Object.entries(otherFilters).forEach(([key, value]) => {
-      filtered = filtered.filter((item) => {
-        return item[key] === value;
-      });
+      if (value !== undefined && value !== "") {
+        filtered = filtered.filter((item) => item[key] === value);
+      }
     });
 
-    // ✅ Sort: Featured first, then newest
+    // ✅ Sort: Featured first, then by date (newest first)
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
