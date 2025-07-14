@@ -175,5 +175,140 @@ router.post("/FASHION", async (req, res) => {
     return res.status(500).json({ error: "Error fetching FASHION" });
   }
 });
+router.post("/ELECTRONICS", async (req, res) => {
+  try {
+    const {
+      searchText,
+      regionId,
+      CITY_ID,
+      DISTRICT_ID,
+      FeaturedAds,
+      isActive,
+      AdType,
+      createdDate,
+      ...otherFilters
+    } = req.body;
+
+    const snapshot = await db.collection("ELECTRONICS").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const createdAt = docData.createdAt?.toDate?.() || null;
+
+        // ✅ Auto demote expired featured ads
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("ELECTRONICS").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    let filtered = data;
+
+    // ✅ Filter: Search Text (in title or subCategories)
+    if (searchText) {
+      const lowerText = searchText.toLowerCase();
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(lowerText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(lowerText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Filter: Region
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    // ✅ Filter: Featured Ads
+    if (FeaturedAds) {
+      filtered = filtered.filter((item) => item.FeaturedAds === FeaturedAds);
+    }
+
+    // ✅ Filter: isActive
+    if (isActive !== undefined) {
+      filtered = filtered.filter((item) => {
+        const val = item.isActive;
+        return String(val) === String(isActive);
+      });
+    }
+
+    // ✅ Filter: Ad Type
+    if (AdType) {
+      filtered = filtered.filter((item) => item.AdType === AdType);
+    }
+
+    // ✅ Filter: Created Date
+    if (createdDate) {
+      filtered = filtered.filter((item) => {
+        const timestamp = item.createdAt?.seconds
+          ? new Date(item.createdAt.seconds * 1000).toISOString().split("T")[0]
+          : null;
+        return timestamp === createdDate;
+      });
+    }
+
+    // ✅ Apply dynamic filters
+    Object.entries(otherFilters).forEach(([key, value]) => {
+      if (value !== undefined && value !== "") {
+        filtered = filtered.filter((item) => item[key] === value);
+      }
+    });
+
+    // ✅ Sort: Featured first, then by createdAt (newest)
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered);
+  } catch (error) {
+    console.error("Error fetching ELECTRONICS:", error);
+    return res.status(500).json({ error: "Error fetching ELECTRONICS" });
+  }
+});
 
 module.exports = router;
