@@ -522,7 +522,7 @@ app.get("/api/slider-images", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-router.get("/REALESTATECOMPdata", async (req, res) => {
+app.get("/REALESTATECOMPdata", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
     const regionId = req.query.regionId;
