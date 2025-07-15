@@ -522,7 +522,106 @@ app.get("/api/slider-images", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get("/REALESTATECOMPdata", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    const regionId = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
 
+    const snapshot = await db.collection("REALESTATECOMP").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const featuredAt = docData.createdAt?.toDate?.() || null;
+
+        // ✅ Auto demote expired Featured Ads
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          featuredAt &&
+          now - featuredAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("REALESTATECOMP").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    // ✅ Only show inactive items
+    const inactiveData = data.filter((item) => {
+      const isActive = item.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filtered = inactiveData;
+
+    // 🔍 Search filter (title or subCategories)
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Region filter
+    if (regionId) {
+      filtered = filtered.filter(
+        (item) => String(item.regionId) === String(regionId)
+      );
+    }
+
+    // ✅ City filter
+    if (CITY_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ District filter
+    if (DISTRICT_ID) {
+      filtered = filtered.filter(
+        (item) => String(item.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    // ✅ Sort: Featured Ads first, then by newest
+    filtered.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered);
+  } catch (error) {
+    console.error("Error fetching REALESTATECOMP:", error);
+    return res.status(500).json({ error: "Error fetching REALESTATECOMP" });
+  }
+});
 // Helper to optimize image URLs
 function optimizeCloudinaryUrl1(url) {
   if (!url.includes("cloudinary.com")) return url;
