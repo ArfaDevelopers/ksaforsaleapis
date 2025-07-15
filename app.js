@@ -544,7 +544,7 @@ app.get("/SPORTSGAMESComp", async (req, res) => {
     return res.status(500).json({ error: "Error fetching SPORTSGAMESComp" });
   }
 });
-app.get("/PETANIMALCOMP", async (req, res) => {
+router.get("/PETANIMALCOMP", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
     const regionId = req.query.regionId;
@@ -644,6 +644,7 @@ app.get("/PETANIMALCOMP", async (req, res) => {
     return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
   }
 });
+
 app.get("/api/cities", async (req, res) => {
   try {
     const { REGION_ID } = req.query;
