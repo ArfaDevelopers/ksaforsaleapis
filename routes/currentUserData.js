@@ -692,7 +692,7 @@ router.get("/Motors", async (req, res) => {
     return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
   }
 });
-app.get("/bookmarked-listings", async (req, res) => {
+router.get("/bookmarked-listings", async (req, res) => {
   try {
     const { userId, sortOrder = "Newest", page = 1, limit = 10 } = req.query;
 
