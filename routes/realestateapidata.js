@@ -440,5 +440,4 @@ router.get("/PETANIMALCOMP", async (req, res) => {
     return res.status(500).json({ error: "Error fetching PETANIMALCOMP" });
   }
 });
-
 module.exports = router;
