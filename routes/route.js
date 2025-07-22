@@ -1,4 +1,4 @@
-const { db, admin } = require("../firebase/config");
+const { db } = require("../firebase/config");
 const express = require("express");
 const router = express.Router();
 const twilio = require("twilio");
@@ -2115,12 +2115,16 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
     });
   }
 
+  const normalizedPhone = phoneNumber.startsWith("+")
+    ? phoneNumber
+    : `+${phoneNumber}`;
+
   try {
-    // 1. Verify OTP via Twilio
+    // 1. Verify OTP using Twilio
     const verifyResponse = await axios.post(
       `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/VerificationCheck`,
       new URLSearchParams({
-        To: phoneNumber,
+        To: normalizedPhone,
         Code: otp,
       }).toString(),
       {
@@ -2140,48 +2144,40 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
       });
     }
 
-    // 2. Find user by phone number in Realtime DB
-    const snapshot = await admin
-      .database()
-      .ref("users")
-      .orderByChild("phoneNumber")
-      .equalTo(phoneNumber)
-      .once("value");
+    // 2. Search user by phone number in Firestore (not Realtime DB!)
+    const snapshot = await db
+      .collection("users")
+      .where("phoneNumber", "==", normalizedPhone)
+      .get();
 
-    if (!snapshot.exists()) {
+    if (snapshot.empty) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "User not found in Firestore",
       });
     }
 
-    const userData = snapshot.val();
-    const userKey = Object.keys(userData)[0];
-    const uid = userData[userKey].uid;
-
-    // 3. Update password in Firebase Authentication
-    await admin.auth().updateUser(uid, {
+    // 3. Update password field in Firestore document
+    const userDoc = snapshot.docs[0];
+    await userDoc.ref.update({
       password: newPassword,
-    });
-
-    // Optional: update the `updatedAt` in DB
-    await admin.database().ref(`users/${userKey}`).update({
       updatedAt: new Date().toISOString(),
     });
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Password updated successfully",
+      message: "OTP verified and password updated successfully",
     });
   } catch (error) {
-    console.error("Password Update Error:", error.message, error.stack);
-    res.status(500).json({
+    console.error("Error updating password:", error.message);
+    return res.status(500).json({
       success: false,
       message: "Failed to verify OTP or update password",
       error: error.message,
     });
   }
 });
+
 // router.post("/verifyChangepasswdotp", async (req, res) => {
 //   const { phoneNumber, otp, newPassword } = req.body;
 
