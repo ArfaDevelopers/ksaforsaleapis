@@ -2105,7 +2105,6 @@ router.post("/forgot-password/send-otp", async (req, res) => {
     });
   }
 });
-
 router.post("/verifyChangepasswdotp", async (req, res) => {
   const { phoneNumber, otp, newPassword } = req.body;
 
@@ -2116,12 +2115,15 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
     });
   }
 
+  const normalizedPhoneNumber = phoneNumber.startsWith("+")
+    ? phoneNumber
+    : `+${phoneNumber}`;
+
   try {
-    // Step 1: Verify OTP with Twilio
     const verificationCheck = await client.verify
       .services(process.env.TWILIO_SERVICE_SID)
       .verificationChecks.create({
-        to: `+${phoneNumber}`, // Add "+" to ensure E.164 format
+        to: normalizedPhoneNumber,
         code: otp,
       });
 
@@ -2132,10 +2134,9 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
       });
     }
 
-    // Step 2: Find user in Firestore by phone number
     const usersRef = db.collection("users");
     const snapshot = await usersRef
-      .where("phoneNumber", "==", phoneNumber)
+      .where("phoneNumber", "==", normalizedPhoneNumber)
       .get();
 
     if (snapshot.empty) {
@@ -2145,7 +2146,6 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
       });
     }
 
-    // Step 3: Update password
     const userDoc = snapshot.docs[0];
     await userDoc.ref.update({
       password: newPassword,
