@@ -2115,7 +2115,7 @@ router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
   }
 
   try {
-    // 1. Verify OTP using Twilio
+    // 1. Verify OTP via Twilio
     const verifyResponse = await axios.post(
       `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/VerificationCheck`,
       new URLSearchParams({
@@ -2143,25 +2143,20 @@ router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
       });
     }
 
-    // 2. Find user by phone number
-    const snapshot = await db
-      .ref("users")
-      .orderByChild("phoneNumber")
-      .equalTo(phoneNumber)
-      .once("value");
+    // 2. Find user by phoneNumber in Firestore
+    const usersRef = db.collection("users");
+    const snapshot = await usersRef
+      .where("phoneNumber", "==", phoneNumber)
+      .get();
 
-    if (!snapshot.exists()) {
-      console.log("No user found for phone:", phoneNumber);
+    if (snapshot.empty) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
 
-    const userKey = Object.keys(snapshot.val())[0];
-    console.log("User found:", userKey);
-
-    // 3. Update password
-    await db.ref(`users/${userKey}`).update({
+    const userDoc = snapshot.docs[0]; // Assuming phone number is unique
+    await userDoc.ref.update({
       password: newPassword,
       updatedAt: new Date().toISOString(),
     });
