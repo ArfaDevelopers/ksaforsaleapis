@@ -2044,6 +2044,7 @@ router.get("/trendingProducts", async (_, res) => {
 router.post("/sendotpreset", async (req, res) => {
   try {
     const { phoneNumber } = req.body;
+    console.log("Incoming phoneNumber:", phoneNumber);
 
     if (!phoneNumber) {
       return res
@@ -2051,7 +2052,7 @@ router.post("/sendotpreset", async (req, res) => {
         .json({ success: false, message: "Phone number is required" });
     }
 
-    // 🔍 Find user by phoneNumber
+    console.log("Checking Firebase user...");
     const snapshot = await db
       .ref("users")
       .orderByChild("phoneNumber")
@@ -2059,28 +2060,30 @@ router.post("/sendotpreset", async (req, res) => {
       .once("value");
 
     if (!snapshot.exists()) {
+      console.log("User not found.");
       return res
         .status(404)
         .json({ success: false, message: "Phone number not found" });
     }
 
-    // 🔐 Generate OTP
     const otp = otpGenerator.generate(4, {
       upperCaseAlphabets: false,
       specialChars: false,
       alphabets: false,
     });
 
-    // 🌐 Send OTP via SMS API
-    const apiUrl = `https://sendpk.com/api/sms.php?username=923008248001&password=4462&sender=BrandTest&mobile=${phoneNumber}&message=${otp}`;
+    console.log("Generated OTP:", otp);
+    const smsApiUrl = `https://sendpk.com/api/sms.php?username=923008248001&password=4462&sender=BrandTest&mobile=${phoneNumber}&message=${otp}`;
+    console.log("Sending OTP using URL:", smsApiUrl);
 
-    const smsResponse = await axios.get(apiUrl);
+    const smsResponse = await axios.get(smsApiUrl);
+    console.log("SMS Response:", smsResponse.data);
 
     if (smsResponse.data.includes("OK")) {
       return res.json({
         success: true,
         message: "OTP sent successfully",
-        otp: otp,
+        otp,
       });
     } else {
       return res.status(500).json({
@@ -2090,10 +2093,12 @@ router.post("/sendotpreset", async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error sending OTP:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error", error });
+    console.error("Error sending OTP:", error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error?.message || error,
+    });
   }
 });
 
