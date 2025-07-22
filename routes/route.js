@@ -2105,72 +2105,63 @@ router.post("/forgot-password/send-otp", async (req, res) => {
     });
   }
 });
-router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
+
+router.post("/verifyChangepasswdotp", async (req, res) => {
   const { phoneNumber, otp, newPassword } = req.body;
 
   if (!phoneNumber || !otp || !newPassword) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing required fields" });
+    return res.status(400).json({
+      success: false,
+      message: "Phone number, OTP, and new password are required",
+    });
   }
 
   try {
-    // 1. Verify OTP via Twilio
-    const verifyResponse = await axios.post(
-      `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/VerificationCheck`,
-      new URLSearchParams({
-        To: phoneNumber,
-        Code: otp,
-      }),
-      {
-        auth: {
-          username: TWILIO_ACCOUNT_SID,
-          password: TWILIO_AUTH_TOKEN,
-        },
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
+    // Step 1: Verify OTP with Twilio
+    const verificationCheck = await client.verify
+      .services(process.env.TWILIO_SERVICE_SID)
+      .verificationChecks.create({
+        to: `+${phoneNumber}`, // Add "+" to ensure E.164 format
+        code: otp,
+      });
 
-    console.log("Twilio verify response:", verifyResponse.data);
-
-    if (verifyResponse.data.status !== "approved") {
-      return res.status(400).json({
+    if (verificationCheck.status !== "approved") {
+      return res.status(401).json({
         success: false,
-        message: "Invalid or expired OTP",
-        twilioStatus: verifyResponse.data.status,
+        message: "Invalid OTP",
       });
     }
 
-    // 2. Find user by phoneNumber in Firestore
+    // Step 2: Find user in Firestore by phone number
     const usersRef = db.collection("users");
     const snapshot = await usersRef
       .where("phoneNumber", "==", phoneNumber)
       .get();
 
     if (snapshot.empty) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
-    const userDoc = snapshot.docs[0]; // Assuming phone number is unique
+    // Step 3: Update password
+    const userDoc = snapshot.docs[0];
     await userDoc.ref.update({
       password: newPassword,
       updatedAt: new Date().toISOString(),
     });
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      message: "Password updated successfully",
+      message: "OTP verified and password updated successfully",
     });
-  } catch (err) {
-    console.error("Full error:", err.response?.data || err.message);
+  } catch (error) {
+    console.error("Error verifying OTP or updating password:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to verify OTP or update password",
-      error: err.response?.data || err.message,
+      error: error.message || error,
     });
   }
 });
