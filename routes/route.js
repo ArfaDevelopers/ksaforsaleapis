@@ -2041,25 +2041,17 @@ router.get("/trendingProducts", async (_, res) => {
     return res.status(500).json({ error: "Error fetching trending products" });
   }
 });
-router.post("/forgot-password/send-otp", async (req, res) => {
-  const { phoneNumber } = req.body;
-
-  if (!phoneNumber) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Phone number is required" });
-  }
-
-  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-  if (!phoneRegex.test(phoneNumber)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Invalid phone number format" });
-  }
-
+router.post("/sendotpreset", async (req, res) => {
   try {
-    // Firebase DB: check if phone number exists
-    // Now 'db' should have the 'ref' method
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Phone number is required" });
+    }
+
+    // 🔍 Find user by phoneNumber
     const snapshot = await db
       .ref("users")
       .orderByChild("phoneNumber")
@@ -2072,35 +2064,36 @@ router.post("/forgot-password/send-otp", async (req, res) => {
         .json({ success: false, message: "Phone number not found" });
     }
 
-    // Send OTP using Twilio Verify
-    const response = await axios.post(
-      `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/Verifications`,
-      new URLSearchParams({
-        To: phoneNumber,
-        Channel: "sms",
-      }).toString(),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${Buffer.from(
-            `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
-          ).toString("base64")}`,
-        },
-      }
-    );
+    // 🔐 Generate OTP
+    const otp = otpGenerator.generate(4, {
+      upperCaseAlphabets: false,
+      specialChars: false,
+      alphabets: false,
+    });
 
-    return res.json({
-      success: true,
-      message: "OTP sent successfully",
-      sid: response.data.sid,
-    });
+    // 🌐 Send OTP via SMS API
+    const apiUrl = `https://sendpk.com/api/sms.php?username=923008248001&password=4462&sender=BrandTest&mobile=${phoneNumber}&message=${otp}`;
+
+    const smsResponse = await axios.get(apiUrl);
+
+    if (smsResponse.data.includes("OK")) {
+      return res.json({
+        success: true,
+        message: "OTP sent successfully",
+        otp: otp,
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP",
+        details: smsResponse.data,
+      });
+    }
   } catch (error) {
-    console.error("Send OTP Error:", error?.response?.data || error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to send OTP",
-      detail: error?.response?.data || error.message,
-    });
+    console.error("Error sending OTP:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error", error });
   }
 });
 
