@@ -2050,7 +2050,16 @@ router.post("/forgot-password/send-otp", async (req, res) => {
       .json({ success: false, message: "Phone number is required" });
   }
 
+  // E.164 format validation: +923189391781
+  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+  if (!phoneRegex.test(phoneNumber)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid phone number format" });
+  }
+
   try {
+    // Firebase DB: check if phone number exists
     const snapshot = await db
       .ref("users")
       .orderByChild("phoneNumber")
@@ -2063,7 +2072,8 @@ router.post("/forgot-password/send-otp", async (req, res) => {
         .json({ success: false, message: "Phone number not found" });
     }
 
-    await axios.post(
+    // Send OTP using Twilio Verify
+    const response = await axios.post(
       `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/Verifications`,
       new URLSearchParams({
         To: phoneNumber,
@@ -2079,12 +2089,21 @@ router.post("/forgot-password/send-otp", async (req, res) => {
       }
     );
 
-    res.json({ success: true, message: "OTP sent to phone number" });
+    return res.json({
+      success: true,
+      message: "OTP sent successfully",
+      sid: response.data.sid,
+    });
   } catch (error) {
-    console.error("Send OTP Error:", error.response?.data || error.message);
-    res.status(500).json({ success: false, message: "Failed to send OTP" });
+    console.error("Send OTP Error:", error?.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send OTP",
+      detail: error?.response?.data || error.message,
+    });
   }
 });
+
 router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
   const { phoneNumber, otp, newPassword } = req.body;
 
@@ -2143,12 +2162,10 @@ router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
       "Verify & Update Error:",
       error.response?.data || error.message
     );
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to verify OTP or update password",
-      });
+    res.status(500).json({
+      success: false,
+      message: "Failed to verify OTP or update password",
+    });
   }
 });
 
