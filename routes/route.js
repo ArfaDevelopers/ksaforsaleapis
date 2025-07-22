@@ -2041,63 +2041,67 @@ router.get("/trendingProducts", async (_, res) => {
     return res.status(500).json({ error: "Error fetching trending products" });
   }
 });
-router.post("/sendotpreset", async (req, res) => {
+// POST /forgot-password/send-otp
+router.post("/forgot-password/send-otp", async (req, res) => {
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Phone number is required" });
+  }
+
+  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+  if (!phoneRegex.test(phoneNumber)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid phone number format" });
+  }
+
   try {
-    const { phoneNumber } = req.body;
-    console.log("Incoming phoneNumber:", phoneNumber);
+    // 🔍 Check if phone number exists in Firestore
+    const usersRef = db.collection("users");
+    const querySnapshot = await usersRef
+      .where("phoneNumber", "==", phoneNumber)
+      .get();
 
-    if (!phoneNumber) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Phone number is required" });
-    }
-
-    console.log("Checking Firebase user...");
-    const snapshot = await db
-      .ref("users")
-      .orderByChild("phoneNumber")
-      .equalTo(phoneNumber)
-      .once("value");
-
-    if (!snapshot.exists()) {
-      console.log("User not found.");
-      return res
-        .status(404)
-        .json({ success: false, message: "Phone number not found" });
-    }
-
-    const otp = otpGenerator.generate(4, {
-      upperCaseAlphabets: false,
-      specialChars: false,
-      alphabets: false,
-    });
-
-    console.log("Generated OTP:", otp);
-    const smsApiUrl = `https://sendpk.com/api/sms.php?username=923008248001&password=4462&sender=BrandTest&mobile=${phoneNumber}&message=${otp}`;
-    console.log("Sending OTP using URL:", smsApiUrl);
-
-    const smsResponse = await axios.get(smsApiUrl);
-    console.log("SMS Response:", smsResponse.data);
-
-    if (smsResponse.data.includes("OK")) {
-      return res.json({
-        success: true,
-        message: "OTP sent successfully",
-        otp,
-      });
-    } else {
-      return res.status(500).json({
+    if (querySnapshot.empty) {
+      return res.status(404).json({
         success: false,
-        message: "Failed to send OTP",
-        details: smsResponse.data,
+        message: "Phone number not found",
       });
     }
+
+    // ✅ Send OTP using Twilio
+    const response = await axios.post(
+      `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/Verifications`,
+      new URLSearchParams({
+        To: phoneNumber,
+        Channel: "sms",
+      }).toString(),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization:
+            "Basic " +
+            Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString(
+              "base64"
+            ),
+        },
+      }
+    );
+
+    return res.json({
+      success: true,
+      message: "OTP sent successfully",
+      sid: response.data.sid,
+    });
   } catch (error) {
-    console.error("Error sending OTP:", error?.message || error);
+    console.error("Send OTP Error:", error?.response?.data || error.message);
     return res.status(500).json({
       success: false,
-      message: "Internal server error",
-      error: error?.message || error,
+      message: "Failed to send OTP",
+      error: error?.response?.data || error.message,
     });
   }
 });
