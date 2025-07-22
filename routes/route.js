@@ -2105,7 +2105,6 @@ router.post("/forgot-password/send-otp", async (req, res) => {
     });
   }
 });
-
 router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
   const { phoneNumber, otp, newPassword } = req.body;
 
@@ -2116,28 +2115,31 @@ router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
   }
 
   try {
-    // 1. Verify OTP
+    // 1. Verify OTP using Twilio
     const verifyResponse = await axios.post(
       `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/VerificationCheck`,
       new URLSearchParams({
         To: phoneNumber,
         Code: otp,
-      }).toString(),
+      }),
       {
+        auth: {
+          username: TWILIO_ACCOUNT_SID,
+          password: TWILIO_AUTH_TOKEN,
+        },
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${Buffer.from(
-            `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
-          ).toString("base64")}`,
         },
       }
     );
 
     if (verifyResponse.data.status !== "approved") {
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid or expired OTP" });
     }
 
-    // 2. Find user
+    // 2. Find the user in Firebase using phone number
     const snapshot = await db
       .ref("users")
       .orderByChild("phoneNumber")
@@ -2150,21 +2152,21 @@ router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    const userKey = Object.keys(snapshot.val())[0]; // Get Firebase record key
+    const userKey = Object.keys(snapshot.val())[0];
 
-    // 3. Update password field
+    // 3. Update the password
     await db.ref(`users/${userKey}`).update({
       password: newPassword, // You can hash this if needed
       updatedAt: new Date().toISOString(),
     });
 
-    res.json({ success: true, message: "Password updated successfully" });
-  } catch (error) {
-    console.error(
-      "Verify & Update Error:",
-      error.response?.data || error.message
-    );
-    res.status(500).json({
+    return res.json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (err) {
+    console.error("OTP verification or password update error:", err.message);
+    return res.status(500).json({
       success: false,
       message: "Failed to verify OTP or update password",
     });
