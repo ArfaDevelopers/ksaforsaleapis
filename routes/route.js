@@ -2133,13 +2133,17 @@ router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
       }
     );
 
+    console.log("Twilio verify response:", verifyResponse.data);
+
     if (verifyResponse.data.status !== "approved") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid or expired OTP" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP",
+        twilioStatus: verifyResponse.data.status,
+      });
     }
 
-    // 2. Find the user in Firebase using phone number
+    // 2. Find user by phone number
     const snapshot = await db
       .ref("users")
       .orderByChild("phoneNumber")
@@ -2147,16 +2151,18 @@ router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
       .once("value");
 
     if (!snapshot.exists()) {
+      console.log("No user found for phone:", phoneNumber);
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
 
     const userKey = Object.keys(snapshot.val())[0];
+    console.log("User found:", userKey);
 
-    // 3. Update the password
+    // 3. Update password
     await db.ref(`users/${userKey}`).update({
-      password: newPassword, // You can hash this if needed
+      password: newPassword,
       updatedAt: new Date().toISOString(),
     });
 
@@ -2165,10 +2171,11 @@ router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
       message: "Password updated successfully",
     });
   } catch (err) {
-    console.error("OTP verification or password update error:", err.message);
+    console.error("Full error:", err.response?.data || err.message);
     return res.status(500).json({
       success: false,
       message: "Failed to verify OTP or update password",
+      error: err.response?.data || err.message,
     });
   }
 });
