@@ -14,19 +14,6 @@ const http = require("http");
 
 const server = http.createServer(app);
 
-// Twilio Credentials (Ensure these are securely stored, not hardcoded)
-// const TWILIO_SERVICE_SID = process.env.TWILIO_SERVICE_SID;
-// const TWILIO_SERVICE_SID = "VA51beac2a0c74d6cb4c150799d00ee491";
-
-// const TWILIO_ACCOUNT_SID = "AC10ecc49693f7d3f967529681877e661f";
-// const TWILIO_AUTH_TOKEN = "b1b5ec56e8255b53aeb5d7a0e4c5ff8b";
-
-// const TWILIO_SERVICE_SID = "VA11fde75371f7e79949bcf4c1e6cb8fef";
-
-// const TWILIO_ACCOUNT_SID = "AC1889f1661cd9d55526ddbf75143ca9a2";
-// const TWILIO_AUTH_TOKEN = "3646885bb5e2f2adb574680251d84de5";
-// Generate Access Token for User
-// const TWILIO_PHONE_NUMBER = "+12013895347"; // Your Twilio number
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
@@ -2052,6 +2039,116 @@ router.get("/trendingProducts", async (_, res) => {
   } catch (error) {
     console.error("Error fetching trending products:", error);
     return res.status(500).json({ error: "Error fetching trending products" });
+  }
+});
+router.post("/forgot-password/send-otp", async (req, res) => {
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Phone number is required" });
+  }
+
+  try {
+    const snapshot = await db
+      .ref("users")
+      .orderByChild("phoneNumber")
+      .equalTo(phoneNumber)
+      .once("value");
+
+    if (!snapshot.exists()) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Phone number not found" });
+    }
+
+    await axios.post(
+      `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/Verifications`,
+      new URLSearchParams({
+        To: phoneNumber,
+        Channel: "sms",
+      }).toString(),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${Buffer.from(
+            `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
+          ).toString("base64")}`,
+        },
+      }
+    );
+
+    res.json({ success: true, message: "OTP sent to phone number" });
+  } catch (error) {
+    console.error("Send OTP Error:", error.response?.data || error.message);
+    res.status(500).json({ success: false, message: "Failed to send OTP" });
+  }
+});
+router.post("/forgot-password/verify-otp-and-update", async (req, res) => {
+  const { phoneNumber, otp, newPassword } = req.body;
+
+  if (!phoneNumber || !otp || !newPassword) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  try {
+    // 1. Verify OTP
+    const verifyResponse = await axios.post(
+      `https://verify.twilio.com/v2/Services/${TWILIO_SERVICE_SID}/VerificationCheck`,
+      new URLSearchParams({
+        To: phoneNumber,
+        Code: otp,
+      }).toString(),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${Buffer.from(
+            `${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`
+          ).toString("base64")}`,
+        },
+      }
+    );
+
+    if (verifyResponse.data.status !== "approved") {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    // 2. Find user
+    const snapshot = await db
+      .ref("users")
+      .orderByChild("phoneNumber")
+      .equalTo(phoneNumber)
+      .once("value");
+
+    if (!snapshot.exists()) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const userKey = Object.keys(snapshot.val())[0]; // Get Firebase record key
+
+    // 3. Update password field
+    await db.ref(`users/${userKey}`).update({
+      password: newPassword, // You can hash this if needed
+      updatedAt: new Date().toISOString(),
+    });
+
+    res.json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    console.error(
+      "Verify & Update Error:",
+      error.response?.data || error.message
+    );
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Failed to verify OTP or update password",
+      });
   }
 });
 
