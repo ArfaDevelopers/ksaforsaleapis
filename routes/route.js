@@ -2050,7 +2050,6 @@ router.post("/forgot-password/send-otp", async (req, res) => {
       .json({ success: false, message: "Phone number is required" });
   }
 
-  // E.164 format validation: +923189391781
   const phoneRegex = /^\+?[1-9]\d{1,14}$/;
   if (!phoneRegex.test(phoneNumber)) {
     return res
@@ -2060,6 +2059,7 @@ router.post("/forgot-password/send-otp", async (req, res) => {
 
   try {
     // Firebase DB: check if phone number exists
+    // Now 'db' should have the 'ref' method
     const snapshot = await db
       .ref("users")
       .orderByChild("phoneNumber")
