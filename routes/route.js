@@ -1,4 +1,4 @@
-const { db } = require("../firebase/config");
+const { db, admin } = require("../firebase/config");
 const express = require("express");
 const router = express.Router();
 const twilio = require("twilio");
@@ -2193,7 +2193,7 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
     : `+${phoneNumber}`;
 
   try {
-    // Step 1: Verify the OTP using Twilio
+    // Step 1: Verify OTP using Twilio
     const verificationCheck = await client.verify
       .services(process.env.TWILIO_SERVICE_SID)
       .verificationChecks.create({
@@ -2208,23 +2208,29 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
       });
     }
 
-    // Step 2: Find user by phone number using Firebase Admin SDK
+    // Step 2: Find Firebase Auth user by phone number
     const userRecord = await admin
       .auth()
       .getUserByPhoneNumber(normalizedPhoneNumber);
 
-    // Step 3: Update the user's password securely
+    if (!userRecord || !userRecord.uid) {
+      return res.status(404).json({
+        success: false,
+        message: "Firebase user not found",
+      });
+    }
+
+    // Step 3: Update password in Firebase Auth
     await admin.auth().updateUser(userRecord.uid, {
       password: newPassword,
     });
 
     return res.status(200).json({
       success: true,
-      message:
-        "OTP verified and password updated successfully in Firebase Auth",
+      message: "Password updated successfully",
     });
   } catch (error) {
-    console.error("Error verifying OTP or updating password:", error);
+    console.error("Error updating password:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to verify OTP or update password",
