@@ -2193,6 +2193,7 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
     : `+${phoneNumber}`;
 
   try {
+    // Step 1: Verify the OTP using Twilio
     const verificationCheck = await client.verify
       .services(process.env.TWILIO_SERVICE_SID)
       .verificationChecks.create({
@@ -2207,27 +2208,20 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
       });
     }
 
-    const usersRef = db.collection("users");
-    const snapshot = await usersRef
-      .where("phoneNumber", "==", normalizedPhoneNumber)
-      .get();
+    // Step 2: Find user by phone number using Firebase Admin SDK
+    const userRecord = await admin
+      .auth()
+      .getUserByPhoneNumber(normalizedPhoneNumber);
 
-    if (snapshot.empty) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    const userDoc = snapshot.docs[0];
-    await userDoc.ref.update({
+    // Step 3: Update the user's password securely
+    await admin.auth().updateUser(userRecord.uid, {
       password: newPassword,
-      updatedAt: new Date().toISOString(),
     });
 
     return res.status(200).json({
       success: true,
-      message: "OTP verified and password updated successfully",
+      message:
+        "OTP verified and password updated successfully in Firebase Auth",
     });
   } catch (error) {
     console.error("Error verifying OTP or updating password:", error);
