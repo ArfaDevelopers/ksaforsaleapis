@@ -2208,43 +2208,34 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
       });
     }
 
-    // Step 2: Get user document from Firestore
+    // ✅ Step 2: Get user by phone number from Firebase Authentication
+    const firebaseUser = await admin
+      .auth()
+      .getUserByPhoneNumber(normalizedPhoneNumber);
+
+    // ✅ Step 3: Update password using Firebase Authentication UID
+    await admin.auth().updateUser(firebaseUser.uid, {
+      password: newPassword,
+    });
+
+    // ✅ Step 4: Optionally update Firestore user document (e.g., updatedAt only)
     const usersRef = db.collection("users");
     const snapshot = await usersRef
       .where("phoneNumber", "==", normalizedPhoneNumber)
       .get();
 
-    if (snapshot.empty) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found in Firestore",
+    if (!snapshot.empty) {
+      const userDoc = snapshot.docs[0];
+      await userDoc.ref.update({
+        // Remove this line if you already deleted password field earlier
+        password: admin.firestore.FieldValue.delete(),
+        updatedAt: new Date().toISOString(),
       });
     }
-
-    const userDoc = snapshot.docs[0];
-    const userData = userDoc.data();
-
-    if (!userData.uid) {
-      return res.status(400).json({
-        success: false,
-        message: "User UID not found in Firestore record",
-      });
-    }
-
-    // Step 3: Update password in Firebase Auth using UID
-    await admin.auth().updateUser(userData.uid, {
-      password: newPassword,
-    });
-
-    // OPTIONAL: Remove the plaintext password field from Firestore
-    await userDoc.ref.update({
-      password: admin.firestore.FieldValue.delete(),
-      updatedAt: new Date().toISOString(),
-    });
 
     return res.status(200).json({
       success: true,
-      message: "OTP verified and Firebase password updated securely",
+      message: "OTP verified and Firebase password updated successfully",
     });
   } catch (error) {
     console.error("Error verifying OTP or updating password:", error);
