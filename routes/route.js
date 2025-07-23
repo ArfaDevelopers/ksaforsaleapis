@@ -2177,7 +2177,6 @@ router.post("/forgot-password/send-otp", async (req, res) => {
 //     });
 //   }
 // });
-
 router.post("/verifyChangepasswdotp", async (req, res) => {
   const { phoneNumber, otp, newPassword } = req.body;
 
@@ -2193,7 +2192,7 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
     : `+${phoneNumber}`;
 
   try {
-    // Step 1: Verify OTP using Twilio
+    // Step 1: Verify OTP
     const verificationCheck = await client.verify
       .services(process.env.TWILIO_SERVICE_SID)
       .verificationChecks.create({
@@ -2208,30 +2207,54 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
       });
     }
 
-    // ✅ Step 2: Get user by phone number from Firebase Authentication
-    const firebaseUser = await admin
-      .auth()
-      .getUserByPhoneNumber(normalizedPhoneNumber);
-
-    // ✅ Step 3: Update password using Firebase Authentication UID
-    await admin.auth().updateUser(firebaseUser.uid, {
-      password: newPassword,
-    });
-
-    // ✅ Step 4: Optionally update Firestore user document (e.g., updatedAt only)
+    // Step 2: Look up user in Firestore
     const usersRef = db.collection("users");
     const snapshot = await usersRef
       .where("phoneNumber", "==", normalizedPhoneNumber)
       .get();
 
-    if (!snapshot.empty) {
-      const userDoc = snapshot.docs[0];
-      await userDoc.ref.update({
-        // Remove this line if you already deleted password field earlier
-        password: admin.firestore.FieldValue.delete(),
-        updatedAt: new Date().toISOString(),
+    if (snapshot.empty) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found in Firestore",
       });
     }
+
+    const userDoc = snapshot.docs[0];
+    const userData = userDoc.data();
+    const firestoreUID = userData.uid;
+
+    let firebaseUser;
+    try {
+      // Try to get the user from Firebase Auth
+      firebaseUser = await admin
+        .auth()
+        .getUserByPhoneNumber(normalizedPhoneNumber);
+    } catch (authError) {
+      if (authError.code === "auth/user-not-found") {
+        // ✅ Create the user in Firebase Auth if not found
+        firebaseUser = await admin.auth().createUser({
+          uid: firestoreUID || undefined,
+          phoneNumber: normalizedPhoneNumber,
+          password: newPassword,
+          email: userData.email || undefined,
+          displayName: userData.fullName || undefined,
+        });
+      } else {
+        throw authError;
+      }
+    }
+
+    // Step 3: Update password in Firebase Auth (if needed)
+    await admin.auth().updateUser(firebaseUser.uid, {
+      password: newPassword,
+    });
+
+    // Step 4: Clean up Firestore
+    await userDoc.ref.update({
+      password: admin.firestore.FieldValue.delete(),
+      updatedAt: new Date().toISOString(),
+    });
 
     return res.status(200).json({
       success: true,
