@@ -2226,33 +2226,51 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
 
     let firebaseUser;
     try {
-      // Try to get the user from Firebase Auth
+      // Try to get the user from Firebase Auth by phone number
       firebaseUser = await admin
         .auth()
         .getUserByPhoneNumber(normalizedPhoneNumber);
     } catch (authError) {
       if (authError.code === "auth/user-not-found") {
-        // ✅ Create the user in Firebase Auth if not found
-        firebaseUser = await admin.auth().createUser({
-          uid: firestoreUID || undefined,
-          phoneNumber: normalizedPhoneNumber,
-          password: newPassword,
-          email: userData.email || undefined,
-          displayName: userData.fullName || undefined,
-        });
+        // If not found by phone number, try to get by UID from Firestore
+        try {
+          firebaseUser = await admin.auth().getUser(firestoreUID);
+          // If user exists by UID but not phone number, ensure phone number is set
+          if (!firebaseUser.phoneNumber) {
+            await admin.auth().updateUser(firebaseUser.uid, {
+              phoneNumber: normalizedPhoneNumber,
+            });
+            firebaseUser = await admin.auth().getUser(firebaseUser.uid); // Refresh user object
+          }
+        } catch (uidError) {
+          if (uidError.code === "auth/user-not-found") {
+            // ✅ Create the user in Firebase Auth if not found by phone number OR UID
+            firebaseUser = await admin.auth().createUser({
+              uid: firestoreUID, // Use Firestore UID for consistency
+              phoneNumber: normalizedPhoneNumber,
+              password: newPassword,
+              email: userData.email || undefined,
+              displayName: userData.fullName || undefined,
+            });
+          } else {
+            throw uidError; // Re-throw other UID related errors
+          }
+        }
       } else {
-        throw authError;
+        throw authError; // Re-throw other phone number related errors
       }
     }
 
-    // Step 3: Update password in Firebase Auth (if needed)
+    // Step 3: Update password in Firebase Auth
+    // This step is always executed if firebaseUser is successfully obtained or created
     await admin.auth().updateUser(firebaseUser.uid, {
       password: newPassword,
     });
 
-    // Step 4: Clean up Firestore
+    // Step 4: Clean up Firestore (remove plain text password if it was ever there)
+    // and update timestamp
     await userDoc.ref.update({
-      password: admin.firestore.FieldValue.delete(),
+      password: admin.firestore.FieldValue.delete(), // Ensure no plain text password remains
       updatedAt: new Date().toISOString(),
     });
 
