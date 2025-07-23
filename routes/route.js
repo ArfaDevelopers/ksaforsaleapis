@@ -2208,29 +2208,46 @@ router.post("/verifyChangepasswdotp", async (req, res) => {
       });
     }
 
-    // Step 2: Find Firebase Auth user by phone number
-    const userRecord = await admin
-      .auth()
-      .getUserByPhoneNumber(normalizedPhoneNumber);
+    // Step 2: Get user document from Firestore
+    const usersRef = db.collection("users");
+    const snapshot = await usersRef
+      .where("phoneNumber", "==", normalizedPhoneNumber)
+      .get();
 
-    if (!userRecord || !userRecord.uid) {
+    if (snapshot.empty) {
       return res.status(404).json({
         success: false,
-        message: "Firebase user not found",
+        message: "User not found in Firestore",
       });
     }
 
-    // Step 3: Update password in Firebase Auth
-    await admin.auth().updateUser(userRecord.uid, {
+    const userDoc = snapshot.docs[0];
+    const userData = userDoc.data();
+
+    if (!userData.uid) {
+      return res.status(400).json({
+        success: false,
+        message: "User UID not found in Firestore record",
+      });
+    }
+
+    // Step 3: Update password in Firebase Auth using UID
+    await admin.auth().updateUser(userData.uid, {
       password: newPassword,
+    });
+
+    // OPTIONAL: Remove the plaintext password field from Firestore
+    await userDoc.ref.update({
+      password: admin.firestore.FieldValue.delete(),
+      updatedAt: new Date().toISOString(),
     });
 
     return res.status(200).json({
       success: true,
-      message: "Password updated successfully",
+      message: "OTP verified and Firebase password updated securely",
     });
   } catch (error) {
-    console.error("Error updating password:", error);
+    console.error("Error verifying OTP or updating password:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to verify OTP or update password",
