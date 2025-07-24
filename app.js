@@ -444,13 +444,17 @@ app.get("/TRAVEL", async (req, res) => {
     return res.status(500).json({ error: "Error fetching TRAVEL" });
   }
 });
-
 app.get("/api/cities", async (req, res) => {
   try {
-    const { REGION_ID } = req.query;
+    let regionIds = req.query.REGION_ID;
 
-    if (!REGION_ID) {
+    if (!regionIds) {
       return res.status(400).json({ error: "REGION_ID is required" });
+    }
+
+    // If only one REGION_ID is passed, make it an array
+    if (!Array.isArray(regionIds)) {
+      regionIds = [regionIds];
     }
 
     const filePath = path.join(__dirname, "data", "City.json");
@@ -461,7 +465,7 @@ app.get("/api/cities", async (req, res) => {
     const rows = jsonData.slice(1);
 
     const filteredCities = rows
-      .filter((row) => row[0] === REGION_ID) // row[0] is REGION_ID
+      .filter((row) => regionIds.includes(row[0]))
       .map((row) => {
         const city = {};
         headers.forEach((key, index) => {
@@ -476,6 +480,38 @@ app.get("/api/cities", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// app.get("/api/cities", async (req, res) => {
+//   try {
+//     const { REGION_ID } = req.query;
+
+//     if (!REGION_ID) {
+//       return res.status(400).json({ error: "REGION_ID is required" });
+//     }
+
+//     const filePath = path.join(__dirname, "data", "City.json");
+//     const fileData = fs.readFileSync(filePath, "utf8");
+//     const jsonData = JSON.parse(fileData);
+
+//     const headers = jsonData[0];
+//     const rows = jsonData.slice(1);
+
+//     const filteredCities = rows
+//       .filter((row) => row[0] === REGION_ID) // row[0] is REGION_ID
+//       .map((row) => {
+//         const city = {};
+//         headers.forEach((key, index) => {
+//           city[key] = row[index];
+//         });
+//         return city;
+//       });
+
+//     res.status(200).json({ cities: filteredCities });
+//   } catch (error) {
+//     console.error("Error reading City.json:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
 app.get("/api/districts", async (req, res) => {
   try {
     const { REGION_ID, CITY_ID } = req.query;
