@@ -331,6 +331,110 @@ router.post("/add-user", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get("/cars", async (req, res) => {
+  try {
+    const searchText = req.query.searchText?.toLowerCase();
+    let regionIds = req.query.regionId;
+    const CITY_ID = req.query.CITY_ID;
+    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    const carsSnapshot = await db.collection("Cars").get();
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const cars = await Promise.all(
+      carsSnapshot.docs.map(async (doc) => {
+        const carData = doc.data();
+        const createdAt = carData.createdAt?.toDate?.() || null;
+
+        // Auto-expire Featured Ads
+        if (
+          carData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("Cars").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          carData.FeaturedAds = "Not Featured Ads";
+          carData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...carData,
+        };
+      })
+    );
+
+    const inactiveCars = cars.filter((car) => {
+      const isActive = car.isActive;
+      return isActive !== true && isActive !== "true";
+    });
+
+    let filteredCars = inactiveCars;
+
+    // 🔍 Search Text
+    if (searchText) {
+      filteredCars = filteredCars.filter((car) => {
+        const titleMatch = car.title?.toLowerCase().includes(searchText);
+        const subCategoriesMatch = Array.isArray(car.subCategories)
+          ? car.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCategoriesMatch;
+      });
+    }
+
+    // ✅ Multiple Region Filter
+    if (regionIds) {
+      if (!Array.isArray(regionIds)) {
+        regionIds = [regionIds]; // convert to array
+      }
+
+      filteredCars = filteredCars.filter((car) =>
+        regionIds.includes(String(car.regionId))
+      );
+    }
+
+    // ✅ Single CITY_ID
+    if (CITY_ID) {
+      filteredCars = filteredCars.filter(
+        (car) => String(car.CITY_ID) === String(CITY_ID)
+      );
+    }
+
+    // ✅ Single DISTRICT_ID
+    if (DISTRICT_ID) {
+      filteredCars = filteredCars.filter(
+        (car) => String(car.District_ID) === String(DISTRICT_ID)
+      );
+    }
+
+    // ✅ Featured Ads first, then latest
+    filteredCars.sort((a, b) => {
+      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      if (aIsFeatured !== bIsFeatured) {
+        return bIsFeatured - aIsFeatured;
+      }
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filteredCars);
+  } catch (error) {
+    console.error("Error fetching cars:", error);
+    return res.status(500).json({ error: "Error fetching cars" });
+  }
+});
+
 // router.get("/cars", async (req, res) => {
 //   try {
 //     const searchText = req.query.searchText?.toLowerCase();
@@ -339,17 +443,43 @@ router.post("/add-user", async (req, res) => {
 //     const DISTRICT_ID = req.query.DISTRICT_ID;
 
 //     const carsSnapshot = await db.collection("Cars").get();
-//     const cars = carsSnapshot.docs
-//       .map((doc) => ({
-//         id: doc.id,
-//         ...doc.data(),
-//       }))
-//       .filter((car) => {
-//         const isActive = car.isActive;
-//         return isActive !== true && isActive !== "true"; // exclude only active cars
-//       });
+//     const now = Date.now();
+//     const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-//     let filteredCars = cars;
+//     const cars = await Promise.all(
+//       carsSnapshot.docs.map(async (doc) => {
+//         const carData = doc.data();
+//         const createdAt = carData.createdAt?.toDate?.() || null;
+
+//         // Auto-expire Featured Ads after 7 days
+//         if (
+//           carData.FeaturedAds === "Featured Ads" &&
+//           createdAt &&
+//           now - createdAt.getTime() > ONE_WEEK_MS
+//         ) {
+//           await db.collection("Cars").doc(doc.id).update({
+//             FeaturedAds: "Not Featured Ads",
+//             featuredAt: null,
+//           });
+
+//           carData.FeaturedAds = "Not Featured Ads";
+//           carData.featuredAt = null;
+//         }
+
+//         return {
+//           id: doc.id,
+//           ...carData,
+//         };
+//       })
+//     );
+
+//     // Filter only inactive cars
+//     const inactiveCars = cars.filter((car) => {
+//       const isActive = car.isActive;
+//       return isActive !== true && isActive !== "true";
+//     });
+
+//     let filteredCars = inactiveCars;
 
 //     // 🔍 Filter by searchText
 //     if (searchText) {
@@ -385,40 +515,19 @@ router.post("/add-user", async (req, res) => {
 //       );
 //     }
 
-//     return res.status(200).json(filteredCars);
-//   } catch (error) {
-//     console.error("Error fetching cars:", error);
-//     return res.status(500).json({ error: "Error fetching cars" });
-//   }
-// });
+//     // ✅ Sort: Featured Ads first, then by createdAt descending
+//     filteredCars.sort((a, b) => {
+//       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+//       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
-// router.get("/cars", async (req, res) => {
-//   try {
-//     const searchText = req.query.searchText?.toLowerCase(); // optional chaining and lowercase for case-insensitive comparison
+//       if (aIsFeatured !== bIsFeatured) {
+//         return bIsFeatured - aIsFeatured;
+//       }
 
-//     const carsSnapshot = await db.collection("Cars").get();
-//     const cars = carsSnapshot.docs
-//       .map((doc) => ({
-//         id: doc.id,
-//         ...doc.data(),
-//       }))
-//       .filter((car) => {
-//         const isActive = car.isActive;
-//         return isActive !== true && isActive !== "true"; // exclude only active cars
-//       });
-
-//     // If searchText is present, filter based on title or subCategories
-//     const filteredCars = searchText
-//       ? cars.filter((car) => {
-//           const titleMatch = car.title?.toLowerCase().includes(searchText);
-//           const subCategoriesMatch = Array.isArray(car.subCategories)
-//             ? car.subCategories.some((cat) =>
-//                 cat.toLowerCase().includes(searchText)
-//               )
-//             : false;
-//           return titleMatch || subCategoriesMatch;
-//         })
-//       : cars;
+//       const aTime = a.createdAt?._seconds || 0;
+//       const bTime = b.createdAt?._seconds || 0;
+//       return bTime - aTime;
+//     });
 
 //     return res.status(200).json(filteredCars);
 //   } catch (error) {
@@ -426,106 +535,6 @@ router.post("/add-user", async (req, res) => {
 //     return res.status(500).json({ error: "Error fetching cars" });
 //   }
 // });
-router.get("/cars", async (req, res) => {
-  try {
-    const searchText = req.query.searchText?.toLowerCase();
-    const regionId = req.query.regionId;
-    const CITY_ID = req.query.CITY_ID;
-    const DISTRICT_ID = req.query.DISTRICT_ID;
-
-    const carsSnapshot = await db.collection("Cars").get();
-    const now = Date.now();
-    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-    const cars = await Promise.all(
-      carsSnapshot.docs.map(async (doc) => {
-        const carData = doc.data();
-        const createdAt = carData.createdAt?.toDate?.() || null;
-
-        // Auto-expire Featured Ads after 7 days
-        if (
-          carData.FeaturedAds === "Featured Ads" &&
-          createdAt &&
-          now - createdAt.getTime() > ONE_WEEK_MS
-        ) {
-          await db.collection("Cars").doc(doc.id).update({
-            FeaturedAds: "Not Featured Ads",
-            featuredAt: null,
-          });
-
-          carData.FeaturedAds = "Not Featured Ads";
-          carData.featuredAt = null;
-        }
-
-        return {
-          id: doc.id,
-          ...carData,
-        };
-      })
-    );
-
-    // Filter only inactive cars
-    const inactiveCars = cars.filter((car) => {
-      const isActive = car.isActive;
-      return isActive !== true && isActive !== "true";
-    });
-
-    let filteredCars = inactiveCars;
-
-    // 🔍 Filter by searchText
-    if (searchText) {
-      filteredCars = filteredCars.filter((car) => {
-        const titleMatch = car.title?.toLowerCase().includes(searchText);
-        const subCategoriesMatch = Array.isArray(car.subCategories)
-          ? car.subCategories.some((cat) =>
-              cat.toLowerCase().includes(searchText)
-            )
-          : false;
-        return titleMatch || subCategoriesMatch;
-      });
-    }
-
-    // ✅ Filter by regionId
-    if (regionId) {
-      filteredCars = filteredCars.filter(
-        (car) => String(car.regionId) === String(regionId)
-      );
-    }
-
-    // ✅ Filter by CITY_ID
-    if (CITY_ID) {
-      filteredCars = filteredCars.filter(
-        (car) => String(car.CITY_ID) === String(CITY_ID)
-      );
-    }
-
-    // ✅ Filter by DISTRICT_ID
-    if (DISTRICT_ID) {
-      filteredCars = filteredCars.filter(
-        (car) => String(car.District_ID) === String(DISTRICT_ID)
-      );
-    }
-
-    // ✅ Sort: Featured Ads first, then by createdAt descending
-    filteredCars.sort((a, b) => {
-      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
-      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
-
-      if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured;
-      }
-
-      const aTime = a.createdAt?._seconds || 0;
-      const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime;
-    });
-
-    return res.status(200).json(filteredCars);
-  } catch (error) {
-    console.error("Error fetching cars:", error);
-    return res.status(500).json({ error: "Error fetching cars" });
-  }
-});
 
 router.get("/commercial-ads", async (req, res) => {
   try {
