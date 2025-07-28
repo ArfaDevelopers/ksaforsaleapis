@@ -1351,11 +1351,12 @@ router.get("/HEALTHCARE", async (req, res) => {
 //     return res.status(500).json({ error: "Error fetching TRAVEL" });
 //   }
 // });
+
 router.get("/TRAVEL", async (req, res) => {
   try {
-    const searchText = req.query.searchText?.toLowerCase();
+    const searchText = req.query.searchText?.toLowerCase() || "";
 
-    // ✅ Handle multiple regionId, CITY_ID, DISTRICT_ID values
+    // Get region, city, district filters from query string
     const regionIds = req.query.regionId
       ? Array.isArray(req.query.regionId)
         ? req.query.regionId
@@ -1376,6 +1377,7 @@ router.get("/TRAVEL", async (req, res) => {
 
     const now = Date.now();
     const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
     const snapshot = await db.collection("TRAVEL").get();
 
     const data = await Promise.all(
@@ -1383,7 +1385,7 @@ router.get("/TRAVEL", async (req, res) => {
         const docData = doc.data();
         const createdAt = docData.createdAt?.toDate?.() || null;
 
-        // ✅ Auto-expire featured ads after 7 days
+        // Auto-expire Featured Ads
         if (
           docData.FeaturedAds === "Featured Ads" &&
           createdAt &&
@@ -1398,18 +1400,19 @@ router.get("/TRAVEL", async (req, res) => {
           docData.featuredAt = null;
         }
 
-        return { id: doc.id, ...docData };
+        return {
+          id: doc.id,
+          ...docData,
+        };
       })
     );
 
-    // ✅ Filter inactive listings
-    const inactiveData = data.filter(
+    // Filter inactive only
+    let filtered = data.filter(
       (item) => !["true", true].includes(item.isActive)
     );
 
-    let filtered = inactiveData;
-
-    // ✅ Search filter
+    // Search filter
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -1422,28 +1425,28 @@ router.get("/TRAVEL", async (req, res) => {
       });
     }
 
-    // ✅ Multi-filter by regionId
+    // Region filter
     if (regionIds.length > 0) {
       filtered = filtered.filter((item) =>
         regionIds.includes(String(item.regionId))
       );
     }
 
-    // ✅ Multi-filter by CITY_ID
+    // City filter
     if (cityIds.length > 0) {
       filtered = filtered.filter((item) =>
         cityIds.includes(String(item.CITY_ID))
       );
     }
 
-    // ✅ Multi-filter by DISTRICT_ID
+    // District filter
     if (districtIds.length > 0) {
       filtered = filtered.filter((item) =>
         districtIds.includes(String(item.District_ID))
       );
     }
 
-    // ✅ Sort: Featured first, then newest
+    // Sort: Featured Ads first, then newest
     filtered.sort((a, b) => {
       const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
