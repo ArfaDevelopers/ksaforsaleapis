@@ -1467,10 +1467,26 @@ router.get("/TRAVEL", async (req, res) => {
 
 router.get("/SPORTSGAMESComp", async (req, res) => {
   try {
-    const searchText = req.query.searchText?.toLowerCase();
-    const regionId = String(req.query.regionId || "");
-    const CITY_ID = String(req.query.CITY_ID || "");
-    const DISTRICT_ID = String(req.query.DISTRICT_ID || "");
+    const searchText = req.query.searchText?.toLowerCase() || "";
+
+    // ✅ Handle multi-value filters
+    const regionIds = req.query.regionId
+      ? Array.isArray(req.query.regionId)
+        ? req.query.regionId
+        : req.query.regionId.split(",")
+      : [];
+
+    const cityIds = req.query.CITY_ID
+      ? Array.isArray(req.query.CITY_ID)
+        ? req.query.CITY_ID
+        : req.query.CITY_ID.split(",")
+      : [];
+
+    const districtIds = req.query.DISTRICT_ID
+      ? Array.isArray(req.query.DISTRICT_ID)
+        ? req.query.DISTRICT_ID
+        : req.query.DISTRICT_ID.split(",")
+      : [];
 
     const snapshot = await db.collection("SPORTSGAMESComp").get();
     const now = Date.now();
@@ -1481,7 +1497,7 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
         const docData = doc.data();
         const createdAt = docData.createdAt?.toDate?.() || null;
 
-        // Auto-expire featured ads older than one week
+        // ✅ Auto-expire featured ads
         if (
           docData.FeaturedAds === "Featured Ads" &&
           createdAt &&
@@ -1499,12 +1515,12 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       })
     );
 
-    // Filter inactive ads
+    // ✅ Filter inactive listings
     let filtered = data.filter(
-      (item) => item.isActive !== true && item.isActive !== "true"
+      (item) => !["true", true].includes(item.isActive)
     );
 
-    // Apply search filters
+    // ✅ Apply search filter
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -1517,22 +1533,28 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       });
     }
 
-    // Region filtering
-    if (regionId) {
-      filtered = filtered.filter((item) => String(item.regionId) === regionId);
-    }
-
-    if (CITY_ID) {
-      filtered = filtered.filter((item) => String(item.CITY_ID) === CITY_ID);
-    }
-
-    if (DISTRICT_ID) {
-      filtered = filtered.filter(
-        (item) => String(item.District_ID) === DISTRICT_ID
+    // ✅ Apply region filter (multi)
+    if (regionIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        regionIds.includes(String(item.regionId))
       );
     }
 
-    // Sort: Featured Ads first, then by most recent
+    // ✅ Apply city filter (multi)
+    if (cityIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        cityIds.includes(String(item.CITY_ID))
+      );
+    }
+
+    // ✅ Apply district filter (multi)
+    if (districtIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        districtIds.includes(String(item.District_ID))
+      );
+    }
+
+    // ✅ Sort by Featured Ads first, then most recent
     filtered.sort((a, b) => {
       const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
