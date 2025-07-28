@@ -934,9 +934,25 @@ router.get("/REALESTATECOMP", async (req, res) => {
 router.get("/JOBBOARD", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
-    const regionId = req.query.regionId;
-    const CITY_ID = req.query.CITY_ID;
-    const DISTRICT_ID = req.query.DISTRICT_ID;
+
+    // ✅ Handle multiple regionId, CITY_ID, DISTRICT_ID values
+    const regionIds = req.query.regionId
+      ? Array.isArray(req.query.regionId)
+        ? req.query.regionId
+        : req.query.regionId.split(",")
+      : [];
+
+    const cityIds = req.query.CITY_ID
+      ? Array.isArray(req.query.CITY_ID)
+        ? req.query.CITY_ID
+        : req.query.CITY_ID.split(",")
+      : [];
+
+    const districtIds = req.query.DISTRICT_ID
+      ? Array.isArray(req.query.DISTRICT_ID)
+        ? req.query.DISTRICT_ID
+        : req.query.DISTRICT_ID.split(",")
+      : [];
 
     const snapshot = await db.collection("JOBBOARD").get();
     const now = Date.now();
@@ -968,13 +984,14 @@ router.get("/JOBBOARD", async (req, res) => {
       })
     );
 
-    const inactiveData = data.filter((item) => {
-      const isActive = item.isActive;
-      return isActive !== true && isActive !== "true";
-    });
+    // ✅ Filter inactive items
+    const inactiveData = data.filter(
+      (item) => !["true", true].includes(item.isActive)
+    );
 
     let filtered = inactiveData;
 
+    // ✅ Filter by searchText
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -987,24 +1004,28 @@ router.get("/JOBBOARD", async (req, res) => {
       });
     }
 
-    if (regionId) {
-      filtered = filtered.filter(
-        (item) => String(item.regionId) === String(regionId)
+    // ✅ Multi-filter by regionId
+    if (regionIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        regionIds.includes(String(item.regionId))
       );
     }
 
-    if (CITY_ID) {
-      filtered = filtered.filter(
-        (item) => String(item.CITY_ID) === String(CITY_ID)
+    // ✅ Multi-filter by CITY_ID
+    if (cityIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        cityIds.includes(String(item.CITY_ID))
       );
     }
 
-    if (DISTRICT_ID) {
-      filtered = filtered.filter(
-        (item) => String(item.District_ID) === String(DISTRICT_ID)
+    // ✅ Multi-filter by DISTRICT_ID
+    if (districtIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        districtIds.includes(String(item.District_ID))
       );
     }
 
+    // ✅ Sort: Featured Ads first, then newest
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
