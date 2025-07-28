@@ -820,7 +820,7 @@ router.get("/REALESTATECOMP", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
 
-    // 🆕 Support multiple values
+    // ✅ Handle multiple regionId, CITY_ID, DISTRICT_ID values
     const regionIds = req.query.regionId
       ? Array.isArray(req.query.regionId)
         ? req.query.regionId
@@ -869,14 +869,14 @@ router.get("/REALESTATECOMP", async (req, res) => {
       })
     );
 
-    // Filter inactive items
+    // ✅ Filter inactive items
     const inactiveItems = data.filter(
       (item) => !["true", true].includes(item.isActive)
     );
 
     let filtered = inactiveItems;
 
-    // 🔍 Filter by searchText
+    // ✅ Search text filter
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -910,7 +910,7 @@ router.get("/REALESTATECOMP", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured first, then newest
+    // ✅ Sort: Featured Ads first, then newest
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
