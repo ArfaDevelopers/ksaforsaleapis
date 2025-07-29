@@ -1026,12 +1026,10 @@ router.get("/REALESTATECOMP", async (req, res) => {
     return res.status(500).json({ error: "Error fetching REALESTATECOMP" });
   }
 });
-
 router.get("/JOBBOARD", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
 
-    // ✅ Handle multiple regionId, CITY_ID, DISTRICT_ID values
     const regionIds = req.query.regionId
       ? Array.isArray(req.query.regionId)
         ? req.query.regionId
@@ -1049,6 +1047,8 @@ router.get("/JOBBOARD", async (req, res) => {
         ? req.query.DISTRICT_ID
         : req.query.DISTRICT_ID.split(",")
       : [];
+
+    const subCategory = req.query.SubCategory?.toLowerCase?.();
 
     const snapshot = await db.collection("JOBBOARD").get();
     const now = Date.now();
@@ -1080,14 +1080,12 @@ router.get("/JOBBOARD", async (req, res) => {
       })
     );
 
-    // ✅ Filter inactive items
     const inactiveData = data.filter(
       (item) => !["true", true].includes(item.isActive)
     );
 
     let filtered = inactiveData;
 
-    // ✅ Filter by searchText
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -1100,28 +1098,30 @@ router.get("/JOBBOARD", async (req, res) => {
       });
     }
 
-    // ✅ Multi-filter by regionId
     if (regionIds.length > 0) {
       filtered = filtered.filter((item) =>
         regionIds.includes(String(item.regionId))
       );
     }
 
-    // ✅ Multi-filter by CITY_ID
     if (cityIds.length > 0) {
       filtered = filtered.filter((item) =>
         cityIds.includes(String(item.CITY_ID))
       );
     }
 
-    // ✅ Multi-filter by DISTRICT_ID
     if (districtIds.length > 0) {
       filtered = filtered.filter((item) =>
         districtIds.includes(String(item.District_ID))
       );
     }
 
-    // ✅ Sort: Featured Ads first, then newest
+    if (subCategory) {
+      filtered = filtered.filter(
+        (item) => item.SubCategory?.toLowerCase() === subCategory
+      );
+    }
+
     filtered.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -1141,6 +1141,121 @@ router.get("/JOBBOARD", async (req, res) => {
     return res.status(500).json({ error: "Error fetching JOBBOARD" });
   }
 });
+
+// router.get("/JOBBOARD", async (req, res) => {
+//   try {
+//     const searchText = req.query.searchText?.toLowerCase();
+
+//     // ✅ Handle multiple regionId, CITY_ID, DISTRICT_ID values
+//     const regionIds = req.query.regionId
+//       ? Array.isArray(req.query.regionId)
+//         ? req.query.regionId
+//         : req.query.regionId.split(",")
+//       : [];
+
+//     const cityIds = req.query.CITY_ID
+//       ? Array.isArray(req.query.CITY_ID)
+//         ? req.query.CITY_ID
+//         : req.query.CITY_ID.split(",")
+//       : [];
+
+//     const districtIds = req.query.DISTRICT_ID
+//       ? Array.isArray(req.query.DISTRICT_ID)
+//         ? req.query.DISTRICT_ID
+//         : req.query.DISTRICT_ID.split(",")
+//       : [];
+
+//     const snapshot = await db.collection("JOBBOARD").get();
+//     const now = Date.now();
+//     const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+//     const data = await Promise.all(
+//       snapshot.docs.map(async (doc) => {
+//         const docData = doc.data();
+//         const featuredAt = docData.createdAt?.toDate?.() || null;
+
+//         if (
+//           docData.FeaturedAds === "Featured Ads" &&
+//           featuredAt &&
+//           now - featuredAt.getTime() > ONE_WEEK_MS
+//         ) {
+//           await db.collection("JOBBOARD").doc(doc.id).update({
+//             FeaturedAds: "Not Featured Ads",
+//             featuredAt: null,
+//           });
+
+//           docData.FeaturedAds = "Not Featured Ads";
+//           docData.featuredAt = null;
+//         }
+
+//         return {
+//           id: doc.id,
+//           ...docData,
+//         };
+//       })
+//     );
+
+//     // ✅ Filter inactive items
+//     const inactiveData = data.filter(
+//       (item) => !["true", true].includes(item.isActive)
+//     );
+
+//     let filtered = inactiveData;
+
+//     // ✅ Filter by searchText
+//     if (searchText) {
+//       filtered = filtered.filter((item) => {
+//         const titleMatch = item.title?.toLowerCase().includes(searchText);
+//         const subCategoriesMatch = Array.isArray(item.subCategories)
+//           ? item.subCategories.some((cat) =>
+//               cat.toLowerCase().includes(searchText)
+//             )
+//           : false;
+//         return titleMatch || subCategoriesMatch;
+//       });
+//     }
+
+//     // ✅ Multi-filter by regionId
+//     if (regionIds.length > 0) {
+//       filtered = filtered.filter((item) =>
+//         regionIds.includes(String(item.regionId))
+//       );
+//     }
+
+//     // ✅ Multi-filter by CITY_ID
+//     if (cityIds.length > 0) {
+//       filtered = filtered.filter((item) =>
+//         cityIds.includes(String(item.CITY_ID))
+//       );
+//     }
+
+//     // ✅ Multi-filter by DISTRICT_ID
+//     if (districtIds.length > 0) {
+//       filtered = filtered.filter((item) =>
+//         districtIds.includes(String(item.District_ID))
+//       );
+//     }
+
+//     // ✅ Sort: Featured Ads first, then newest
+//     filtered.sort((a, b) => {
+//       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+//       const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+//       if (aIsFeatured !== bIsFeatured) {
+//         return bIsFeatured - aIsFeatured;
+//       }
+
+//       const aTime = a.createdAt?._seconds || 0;
+//       const bTime = b.createdAt?._seconds || 0;
+//       return bTime - aTime;
+//     });
+
+//     return res.status(200).json(filtered);
+//   } catch (error) {
+//     console.error("Error fetching JOBBOARD:", error);
+//     return res.status(500).json({ error: "Error fetching JOBBOARD" });
+//   }
+// });
 router.get("/jobBoardSubCategories", async (req, res) => {
   try {
     const jobSnapshot = await db.collection("JOBBOARD").get();
