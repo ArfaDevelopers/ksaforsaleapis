@@ -1141,6 +1141,51 @@ router.get("/JOBBOARD", async (req, res) => {
     return res.status(500).json({ error: "Error fetching JOBBOARD" });
   }
 });
+router.get("/jobBoardSubCategories", async (req, res) => {
+  try {
+    const jobSnapshot = await db.collection("JOBBOARD").get();
+
+    const categories1 = [
+      "Administrative Jobs",
+      "Fashion & Beauty Jobs",
+      "Security & Safety Jobs",
+      "Teaching Jobs",
+      "IT & Design Jobs",
+      "Agriculture & Farming Jobs",
+      "Industrial Jobs",
+      "Medical & Nursing Jobs",
+      "Architecture & Construction Jobs",
+      "Housekeeping Jobs",
+      "Restaurant Jobs",
+    ];
+
+    const subCategoryCount = {};
+
+    jobSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories1.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching jobboard subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching jobboard subcategories" });
+  }
+});
+
 router.get("/fashionSubCategories", async (req, res) => {
   try {
     const fashionSnapshot = await db.collection("FASHION").get();
