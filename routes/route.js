@@ -1414,6 +1414,55 @@ router.get("/HEALTHCARE", async (req, res) => {
     return res.status(500).json({ error: "Error fetching HEALTHCARE" });
   }
 });
+router.get("/healthcareSubCategories", async (req, res) => {
+  try {
+    const healthcareSnapshot = await db.collection("HEALTHCARE").get();
+
+    const categories1 = [
+      "Outdoor Furniture",
+      "Majlis & Sofas",
+      "Cabinets & Wardrobes",
+      "Beds & Mattresses",
+      "Tables & Chairs",
+      "Kitchens",
+      "Bathrooms",
+      "Carpets",
+      "Curtains",
+      "Decoration & Accessories",
+      "Lighting",
+      "Household Items",
+      "Garden - Plants",
+      "Office Furniture",
+      "Doors - Windows - Aluminium",
+      "Tiles & Flooring",
+    ];
+
+    const subCategoryCount = {};
+
+    healthcareSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories1.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching healthcare subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching healthcare subcategories" });
+  }
+});
 
 // router.get("/TRAVEL", async (req, res) => {
 //   try {
