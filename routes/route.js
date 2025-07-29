@@ -483,6 +483,53 @@ router.get("/carsSubCategories", async (req, res) => {
     return res.status(500).json({ error: "Error fetching car subcategories" });
   }
 });
+router.get("/electronicsSubCategories", async (req, res) => {
+  try {
+    const electronicsSnapshot = await db.collection("ELECTRONICS").get();
+
+    const categories = [
+      "Mobile Phones",
+      "Tablet Devices",
+      "Computers & Laptops",
+      "Video Games",
+      "Television & Audio System",
+      "Accounts & Subscriptions",
+      "Special Number",
+      "Home & Kitchen Appliance",
+      "Motors & Generators",
+      "Cameras",
+      "Networking Devices",
+      "Screens & Projectors",
+      "Printer & Scanner",
+      "Computer Accessories",
+    ];
+
+    const subCategoryCount = {};
+
+    electronicsSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching electronics subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching electronics subcategories" });
+  }
+});
 
 // router.get("/cars", async (req, res) => {
 //   try {
