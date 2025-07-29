@@ -434,6 +434,30 @@ router.get("/cars", async (req, res) => {
     return res.status(500).json({ error: "Error fetching cars" });
   }
 });
+router.get("/carsSubCaegores", async (req, res) => {
+  try {
+    const carsSnapshot = await db.collection("Cars").get();
+
+    const cars = carsSnapshot.docs.map((doc) => {
+      const carData = doc.data();
+
+      // Convert Firestore Timestamp to milliseconds if needed
+      if (carData.createdAt?.toDate) {
+        carData.createdAt = carData.createdAt.toDate().getTime();
+      }
+
+      return {
+        id: doc.id,
+        ...carData,
+      };
+    });
+
+    return res.status(200).json(cars);
+  } catch (error) {
+    console.error("Error fetching cars:", error);
+    return res.status(500).json({ error: "Error fetching cars" });
+  }
+});
 
 // router.get("/cars", async (req, res) => {
 //   try {
