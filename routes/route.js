@@ -1141,6 +1141,49 @@ router.get("/JOBBOARD", async (req, res) => {
     return res.status(500).json({ error: "Error fetching JOBBOARD" });
   }
 });
+router.get("/fashionSubCategories", async (req, res) => {
+  try {
+    const fashionSnapshot = await db.collection("FASHION").get();
+
+    const categories1 = [
+      "Watches",
+      "Perfumes & Incense",
+      "Sports Equipment",
+      "Men's Fashion",
+      "Women's Fashion",
+      "Children's Clothing & Accessories",
+      "Sleepwear",
+      "Gifts",
+      "Luggage",
+      "Health & Beauty",
+    ];
+
+    const subCategoryCount = {};
+
+    fashionSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories1.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching fashion subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching fashion subcategories" });
+  }
+});
 
 router.get("/FASHION", async (req, res) => {
   try {
