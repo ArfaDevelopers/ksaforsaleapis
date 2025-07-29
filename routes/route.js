@@ -1574,26 +1574,43 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
 
 router.get("/Education", async (req, res) => {
   try {
-    const searchText = req.query.searchText?.toLowerCase();
-    const regionId = req.query.regionId;
-    const CITY_ID = req.query.CITY_ID;
-    const DISTRICT_ID = req.query.DISTRICT_ID;
+    const searchText = req.query.searchText?.toLowerCase() || "";
 
-    const snapshot = await db.collection("Education").get();
+    // Get region, city, district filters from query string
+    const regionIds = req.query.regionId
+      ? Array.isArray(req.query.regionId)
+        ? req.query.regionId
+        : req.query.regionId.split(",")
+      : [];
+
+    const cityIds = req.query.CITY_ID
+      ? Array.isArray(req.query.CITY_ID)
+        ? req.query.CITY_ID
+        : req.query.CITY_ID.split(",")
+      : [];
+
+    const districtIds = req.query.DISTRICT_ID
+      ? Array.isArray(req.query.DISTRICT_ID)
+        ? req.query.DISTRICT_ID
+        : req.query.DISTRICT_ID.split(",")
+      : [];
+
     const now = Date.now();
     const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const snapshot = await db.collection("Education").get();
 
     const data = await Promise.all(
       snapshot.docs.map(async (doc) => {
         const docData = doc.data();
-        const featuredAt = docData.createdAt?.toDate?.() || null;
+        const createdAt = docData.createdAt?.toDate?.() || null;
 
-        const isFeaturedExpired =
+        // Auto-expire Featured Ads
+        if (
           docData.FeaturedAds === "Featured Ads" &&
-          featuredAt &&
-          now - featuredAt.getTime() > ONE_WEEK_MS;
-
-        if (isFeaturedExpired) {
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
           await db.collection("Education").doc(doc.id).update({
             FeaturedAds: "Not Featured Ads",
             featuredAt: null,
@@ -1610,49 +1627,51 @@ router.get("/Education", async (req, res) => {
       })
     );
 
-    // Get only inactive
+    // Filter inactive only
     let filtered = data.filter(
-      (item) => item.isActive !== true && item.isActive !== "true"
+      (item) => !["true", true].includes(item.isActive)
     );
 
+    // Search filter
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
-        const subCategoriesMatch = Array.isArray(item.subCategories)
+        const subCatMatch = Array.isArray(item.subCategories)
           ? item.subCategories.some((cat) =>
               cat.toLowerCase().includes(searchText)
             )
           : false;
-        return titleMatch || subCategoriesMatch;
+        return titleMatch || subCatMatch;
       });
     }
 
-    if (regionId) {
-      filtered = filtered.filter(
-        (item) => String(item.regionId) === String(regionId)
+    // Region filter
+    if (regionIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        regionIds.includes(String(item.regionId))
       );
     }
 
-    if (CITY_ID) {
-      filtered = filtered.filter(
-        (item) => String(item.CITY_ID) === String(CITY_ID)
+    // City filter
+    if (cityIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        cityIds.includes(String(item.CITY_ID))
       );
     }
 
-    if (DISTRICT_ID) {
-      filtered = filtered.filter(
-        (item) => String(item.District_ID) === String(DISTRICT_ID)
+    // District filter
+    if (districtIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        districtIds.includes(String(item.District_ID))
       );
     }
 
-    // Sort featured first, then by latest created
+    // Sort: Featured Ads first, then newest
     filtered.sort((a, b) => {
-      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
-      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
-      if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured;
-      }
+      if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
