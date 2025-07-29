@@ -315,6 +315,72 @@ router.post("/create-conversation", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get("/carsSubCategories", async (req, res) => {
+  try {
+    const carsSnapshot = await db.collection("Cars").get();
+
+    const categories = [
+      "Cars For Sale",
+      "Car Rental",
+      "Plates Number",
+      "Spare Parts",
+      "Accessories",
+      "Wheels & Rims",
+      "Trucks & Heavy Machinery",
+      "Tshaleeh",
+      "Boats & Jet Ski",
+      "Classic Cars",
+      "Salvage Cars",
+      "Mortgaged Cars",
+      "Recovery",
+      "Food Truck",
+      "Caravans",
+      "Reports",
+      "Car Cleaning",
+    ];
+
+    const subCategoryCount = {};
+    const cars = [];
+
+    carsSnapshot.docs.forEach((doc) => {
+      const carData = doc.data();
+
+      // Convert Firestore Timestamp to milliseconds
+      if (carData.createdAt?.toDate) {
+        carData.createdAt = carData.createdAt.toDate().getTime();
+      }
+
+      const car = {
+        id: doc.id,
+        ...carData,
+      };
+
+      cars.push(car);
+
+      const subCat = car.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    // Include all predefined categories even if they have 0 items
+    const resultCounts = categories.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json({
+      cars,
+      subCategoryCounts: resultCounts,
+    });
+  } catch (error) {
+    console.error("Error fetching cars:", error);
+    return res.status(500).json({ error: "Error fetching cars" });
+  }
+});
 
 // Add User to Conversation
 router.post("/add-user", async (req, res) => {
