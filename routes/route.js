@@ -2061,6 +2061,55 @@ router.get("/sportsGamesSubCategories", async (req, res) => {
       .json({ error: "Error fetching sports & games subcategories" });
   }
 });
+router.get("/petAnimalSubCategories", async (req, res) => {
+  try {
+    const snapshot = await db.collection("PETANIMALCOMP").get();
+
+    const categories1 = [
+      "Sheep",
+      "Goats",
+      "Parrot",
+      "Dove/Pigeon",
+      "Cats",
+      "Chickens",
+      "Camels",
+      "Horses",
+      "Dogs",
+      "Cows",
+      "Fish & Turtles",
+      "Rabbits",
+      "Ducks",
+      "Squirrels",
+      "Hamsters",
+      "Fur",
+    ];
+
+    const subCategoryCount = {};
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories1.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching pet animal subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching pet animal subcategories" });
+  }
+});
 
 router.get("/Education", async (req, res) => {
   try {
