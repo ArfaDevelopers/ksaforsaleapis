@@ -2190,7 +2190,7 @@ router.get("/Education", async (req, res) => {
     if (subCategory) {
       filtered = filtered.filter((item) =>
         Array.isArray(item.subCategories)
-          ? item.subCategories.some((cat) =>
+          ? item.SubCategory.some((cat) =>
               cat
                 .toLowerCase()
                 .trim()
