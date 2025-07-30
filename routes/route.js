@@ -1201,6 +1201,48 @@ router.get("/realEstateSubCategories", async (req, res) => {
       .json({ error: "Error fetching real estate subcategories" });
   }
 });
+router.get("/travelSubCategories", async (req, res) => {
+  try {
+    const travelSnapshot = await db.collection("TRAVEL").get();
+
+    const categories1 = [
+      "Other Services",
+      "Contracting Services",
+      "Government Paperwork Services",
+      "Delivery Services",
+      "Furniture Moving Services",
+      "Cleaning Services",
+      "International Shopping Services",
+      "Legal Services",
+      "Accounting & Financial Services",
+    ];
+
+    const subCategoryCount = {};
+
+    travelSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories1.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching travel subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching travel subcategories" });
+  }
+});
 
 // router.get("/JOBBOARD", async (req, res) => {
 //   try {
