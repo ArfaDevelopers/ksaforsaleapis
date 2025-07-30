@@ -2185,18 +2185,11 @@ router.get("/Education", async (req, res) => {
       });
     }
 
-    // Subcategory filter
-    // Subcategory filter
     if (subCategory) {
       filtered = filtered.filter((item) =>
-        Array.isArray(item.subCategories)
-          ? item.SubCategory.some((cat) =>
-              cat
-                .toLowerCase()
-                .trim()
-                .includes(subCategory.toLowerCase().trim())
-            )
-          : false
+        item.SubCategory?.toLowerCase()
+          .trim()
+          .includes(subCategory.toLowerCase().trim())
       );
     }
 
