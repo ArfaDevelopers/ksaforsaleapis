@@ -2021,6 +2021,46 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+router.get("/sportsGamesSubCategories", async (req, res) => {
+  try {
+    const sportsSnapshot = await db.collection("SPORTSGAMESComp").get();
+
+    const categories1 = [
+      "Gaming Consoles",
+      "Video Games",
+      "Controllers",
+      "Gaming Accessories",
+      "Gift Cards",
+      "Accounts",
+      "Toys",
+    ];
+
+    const subCategoryCount = {};
+
+    sportsSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories1.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching sports & games subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching sports & games subcategories" });
+  }
+});
 
 router.get("/Education", async (req, res) => {
   try {
