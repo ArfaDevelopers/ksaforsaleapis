@@ -1141,6 +1141,66 @@ router.get("/JOBBOARD", async (req, res) => {
     return res.status(500).json({ error: "Error fetching JOBBOARD" });
   }
 });
+router.get("/realEstateSubCategories", async (req, res) => {
+  try {
+    const realEstateSnapshot = await db.collection("REALESTATECOMP").get();
+
+    const categories1 = [
+      "Apartments for Rent",
+      "Apartments for Sale",
+      "Building for Rent",
+      "Building for Sale",
+      "Camps for Rent",
+      "Chalets for Sale",
+      "Commercial Lands for Sale",
+      "Compound for Rent",
+      "Compound for Sale",
+      "Farm for Rent",
+      "Farms for Sale",
+      "Floor for Sale",
+      "Floors for Rent",
+      "Hall for Rent",
+      "Houses for Rent",
+      "Houses for Sale",
+      "Lands for Sale",
+      "Offices for Rent",
+      "Rest Houses for Rent",
+      "Rest Houses for Sale",
+      "Rooms for Rent",
+      "Shops for Rent",
+      "Shops for Transfer",
+      "Villas for Rent",
+      "Villas for Sale",
+      "Warehouse for Sale",
+      "Warehouse for Rent",
+    ];
+
+    const subCategoryCount = {};
+
+    realEstateSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories1.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching real estate subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching real estate subcategories" });
+  }
+});
 
 // router.get("/JOBBOARD", async (req, res) => {
 //   try {
