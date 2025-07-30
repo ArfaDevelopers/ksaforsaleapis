@@ -2186,10 +2186,16 @@ router.get("/Education", async (req, res) => {
     }
 
     // Subcategory filter
+    // Subcategory filter
     if (subCategory) {
       filtered = filtered.filter((item) =>
         Array.isArray(item.subCategories)
-          ? item.subCategories.some((cat) => cat.toLowerCase() === subCategory)
+          ? item.subCategories.some((cat) =>
+              cat
+                .toLowerCase()
+                .trim()
+                .includes(subCategory.toLowerCase().trim())
+            )
           : false
       );
     }
