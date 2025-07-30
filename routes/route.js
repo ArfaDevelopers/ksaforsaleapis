@@ -2223,6 +2223,56 @@ router.get("/Education", async (req, res) => {
     return res.status(500).json({ error: "Error fetching Education" });
   }
 });
+router.get("/educationSubCategories", async (req, res) => {
+  try {
+    const snapshot = await db.collection("Education").get();
+
+    const categories1 = [
+      "Hunting & Trips",
+      "Gardening & Agriculture",
+      "Parties & Events",
+      "Travel & Tourism",
+      "Roommate",
+      "Lost & Found",
+      "Education & Training",
+      "Sports Training",
+      "Stock & Forex Education",
+      "Driving Lessons",
+      "Private Tutoring",
+      "Training Courses",
+      "Antiques & Collectibles",
+      "Projects & Investments",
+      "Books & Arts",
+      "Programming & Design",
+      "Food & Beverages",
+    ];
+
+    const subCategoryCount = {};
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const subCat = data.SubCategory || "Unknown";
+
+      if (subCategoryCount[subCat]) {
+        subCategoryCount[subCat]++;
+      } else {
+        subCategoryCount[subCat] = 1;
+      }
+    });
+
+    const result = categories1.map((cat) => ({
+      category: cat,
+      count: subCategoryCount[cat] || 0,
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching education subcategories:", error);
+    return res
+      .status(500)
+      .json({ error: "Error fetching education subcategories" });
+  }
+});
 
 router.get("/getItemById", async (req, res) => {
   try {
