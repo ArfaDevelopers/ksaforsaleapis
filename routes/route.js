@@ -2114,68 +2114,123 @@ router.get("/petAnimalSubCategories", async (req, res) => {
 router.get("/Education", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase() || "";
+    const subCategory = req.query.subCategory?.toLowerCase() || "";
 
-    // Multiple regionIds supported
+    // Get region, city, district filters from query string
     const regionIds = req.query.regionId
       ? Array.isArray(req.query.regionId)
         ? req.query.regionId
         : req.query.regionId.split(",")
       : [];
 
-    const CITY_ID = req.query.CITY_ID;
-    const DISTRICT_ID = req.query.DISTRICT_ID;
-    const subCategory = req.query.subCategory?.toLowerCase();
+    const cityIds = req.query.CITY_ID
+      ? Array.isArray(req.query.CITY_ID)
+        ? req.query.CITY_ID
+        : req.query.CITY_ID.split(",")
+      : [];
 
-    const data = await EducationModel.find().lean();
+    const districtIds = req.query.DISTRICT_ID
+      ? Array.isArray(req.query.DISTRICT_ID)
+        ? req.query.DISTRICT_ID
+        : req.query.DISTRICT_ID.split(",")
+      : [];
 
-    let filtered = data;
+    const now = Date.now();
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-    // 🔍 Filter by search text in title or description
+    const snapshot = await db.collection("Education").get();
+
+    const data = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const docData = doc.data();
+        const createdAt = docData.createdAt?.toDate?.() || null;
+
+        // Auto-expire Featured Ads
+        if (
+          docData.FeaturedAds === "Featured Ads" &&
+          createdAt &&
+          now - createdAt.getTime() > ONE_WEEK_MS
+        ) {
+          await db.collection("Education").doc(doc.id).update({
+            FeaturedAds: "Not Featured Ads",
+            featuredAt: null,
+          });
+
+          docData.FeaturedAds = "Not Featured Ads";
+          docData.featuredAt = null;
+        }
+
+        return {
+          id: doc.id,
+          ...docData,
+        };
+      })
+    );
+
+    // Filter inactive only
+    let filtered = data.filter(
+      (item) => !["true", true].includes(item.isActive)
+    );
+
+    // Search filter
     if (searchText) {
       filtered = filtered.filter((item) => {
-        const title = item.title?.toLowerCase() || "";
-        const description = item.description?.toLowerCase() || "";
-        return title.includes(searchText) || description.includes(searchText);
+        const titleMatch = item.title?.toLowerCase().includes(searchText);
+        const subCatMatch = Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) =>
+              cat.toLowerCase().includes(searchText)
+            )
+          : false;
+        return titleMatch || subCatMatch;
       });
     }
 
-    // 🌍 Filter by regionId
+    // Subcategory filter
+    if (subCategory) {
+      filtered = filtered.filter((item) =>
+        Array.isArray(item.subCategories)
+          ? item.subCategories.some((cat) => cat.toLowerCase() === subCategory)
+          : false
+      );
+    }
+
+    // Region filter
     if (regionIds.length > 0) {
       filtered = filtered.filter((item) =>
-        regionIds.includes(item.regionId?.toString())
+        regionIds.includes(String(item.regionId))
       );
     }
 
-    // 🏙️ Filter by CITY_ID
-    if (CITY_ID) {
-      filtered = filtered.filter(
-        (item) => item.CITY_ID?.toString() === CITY_ID.toString()
+    // City filter
+    if (cityIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        cityIds.includes(String(item.CITY_ID))
       );
     }
 
-    // 🏞️ Filter by DISTRICT_ID
-    if (DISTRICT_ID) {
-      filtered = filtered.filter(
-        (item) => item.DISTRICT_ID?.toString() === DISTRICT_ID.toString()
+    // District filter
+    if (districtIds.length > 0) {
+      filtered = filtered.filter((item) =>
+        districtIds.includes(String(item.District_ID))
       );
     }
 
-    // 🗂️ ✅ Filter by subCategory (in array)
-    if (subCategory) {
-      filtered = filtered.filter((item) => {
-        if (Array.isArray(item.subCategories)) {
-          return item.subCategories.some(
-            (cat) => cat.toLowerCase() === subCategory
-          );
-        }
-        return false;
-      });
-    }
+    // Sort: Featured Ads first, then newest
+    filtered.sort((a, b) => {
+      const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+      const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
-    res.json(filtered);
+      if (aFeatured !== bFeatured) return bFeatured - aFeatured;
+
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+
+    return res.status(200).json(filtered);
   } catch (error) {
-    console.error("Error in /Education route:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error fetching Education:", error);
+    return res.status(500).json({ error: "Error fetching Education" });
   }
 });
 
