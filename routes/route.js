@@ -2186,10 +2186,10 @@ router.get("/Education", async (req, res) => {
     }
 
     if (subCategory) {
-      filtered = filtered.filter((item) =>
-        item.SubCategory?.toLowerCase()
-          .trim()
-          .includes(subCategory.toLowerCase().trim())
+      filtered = filtered.filter(
+        (item) =>
+          item.SubCategory?.toLowerCase().trim() ===
+          subCategory.toLowerCase().trim()
       );
     }
 
