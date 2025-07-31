@@ -463,8 +463,9 @@ router.get("/carsSubCategories", async (req, res) => {
     carsSnapshot.docs.forEach((doc) => {
       const carData = doc.data();
 
-      if (carData.isActive === false) {
-        const subCat = carData.SubCategory || "Unknown";
+      // Consider only active listings (or remove this condition if not needed)
+      if (carData.isActive !== false) {
+        const subCat = (carData.SubCategory || "Unknown").trim();
 
         if (subCategoryCount[subCat]) {
           subCategoryCount[subCat]++;
