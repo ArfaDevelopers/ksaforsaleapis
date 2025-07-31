@@ -2115,7 +2115,7 @@ router.get("/Education", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase() || "";
     const subCategory = req.query.subCategory?.toLowerCase() || "";
-
+    console.log(subCategory, "subCategory_______");
     // Get region, city, district filters from query string
     const regionIds = req.query.regionId
       ? Array.isArray(req.query.regionId)
