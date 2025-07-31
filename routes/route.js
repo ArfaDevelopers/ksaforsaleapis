@@ -462,16 +462,18 @@ router.get("/carsSubCategories", async (req, res) => {
 
     carsSnapshot.docs.forEach((doc) => {
       const carData = doc.data();
-      const subCat = carData.SubCategory || "Unknown";
 
-      if (subCategoryCount[subCat]) {
-        subCategoryCount[subCat]++;
-      } else {
-        subCategoryCount[subCat] = 1;
+      if (carData.isActive === false) {
+        const subCat = carData.SubCategory || "Unknown";
+
+        if (subCategoryCount[subCat]) {
+          subCategoryCount[subCat]++;
+        } else {
+          subCategoryCount[subCat] = 1;
+        }
       }
     });
 
-    // Map counts to the predefined list (with 0 if not present)
     const result = categories.map((cat) => ({
       category: cat,
       count: subCategoryCount[cat] || 0,
@@ -483,6 +485,7 @@ router.get("/carsSubCategories", async (req, res) => {
     return res.status(500).json({ error: "Error fetching car subcategories" });
   }
 });
+
 router.get("/electronicsSubCategories", async (req, res) => {
   try {
     const electronicsSnapshot = await db.collection("ELECTRONICS").get();
@@ -506,15 +509,11 @@ router.get("/electronicsSubCategories", async (req, res) => {
 
     const subCategoryCount = {};
 
-    electronicsSnapshot.docs.forEach((doc) => {
+    electronicsSnapshot.forEach((doc) => {
       const data = doc.data();
       const subCat = data.SubCategory || "Unknown";
 
-      if (subCategoryCount[subCat]) {
-        subCategoryCount[subCat]++;
-      } else {
-        subCategoryCount[subCat] = 1;
-      }
+      subCategoryCount[subCat] = (subCategoryCount[subCat] || 0) + 1;
     });
 
     const result = categories.map((cat) => ({
@@ -525,9 +524,9 @@ router.get("/electronicsSubCategories", async (req, res) => {
     return res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching electronics subcategories:", error);
-    return res
-      .status(500)
-      .json({ error: "Error fetching electronics subcategories" });
+    return res.status(500).json({
+      error: "Error fetching electronics subcategories",
+    });
   }
 });
 
@@ -1143,9 +1142,9 @@ router.get("/JOBBOARD", async (req, res) => {
 });
 router.get("/realEstateSubCategories", async (req, res) => {
   try {
-    const realEstateSnapshot = await db.collection("REALESTATECOMP").get();
+    const snapshot = await db.collection("REALESTATECOMP").get();
 
-    const categories1 = [
+    const predefinedCategories = [
       "Apartments for Rent",
       "Apartments for Sale",
       "Building for Rent",
@@ -1175,32 +1174,25 @@ router.get("/realEstateSubCategories", async (req, res) => {
       "Warehouse for Rent",
     ];
 
-    const subCategoryCount = {};
+    const countMap = {};
 
-    realEstateSnapshot.docs.forEach((doc) => {
-      const data = doc.data();
-      const subCat = data.SubCategory || "Unknown";
-
-      if (subCategoryCount[subCat]) {
-        subCategoryCount[subCat]++;
-      } else {
-        subCategoryCount[subCat] = 1;
-      }
+    snapshot.forEach((doc) => {
+      const { SubCategory = "Unknown" } = doc.data();
+      countMap[SubCategory] = (countMap[SubCategory] || 0) + 1;
     });
 
-    const result = categories1.map((cat) => ({
-      category: cat,
-      count: subCategoryCount[cat] || 0,
+    const result = predefinedCategories.map((category) => ({
+      category,
+      count: countMap[category] || 0,
     }));
 
-    return res.status(200).json(result);
+    res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching real estate subcategories:", error);
-    return res
-      .status(500)
-      .json({ error: "Error fetching real estate subcategories" });
+    res.status(500).json({ error: "Error fetching real estate subcategories" });
   }
 });
+
 router.get("/travelSubCategories", async (req, res) => {
   try {
     const travelSnapshot = await db.collection("TRAVEL").get();
@@ -1221,6 +1213,10 @@ router.get("/travelSubCategories", async (req, res) => {
 
     travelSnapshot.docs.forEach((doc) => {
       const data = doc.data();
+
+      // ✅ Only include inactive or undefined isActive
+      if (["true", true].includes(data.isActive)) return;
+
       const subCat = data.SubCategory || "Unknown";
 
       if (subCategoryCount[subCat]) {
@@ -1380,6 +1376,10 @@ router.get("/jobBoardSubCategories", async (req, res) => {
 
     jobSnapshot.docs.forEach((doc) => {
       const data = doc.data();
+
+      // ✅ Skip active items
+      if (["true", true].includes(data.isActive)) return;
+
       const subCat = data.SubCategory || "Unknown";
 
       if (subCategoryCount[subCat]) {
@@ -1424,6 +1424,10 @@ router.get("/fashionSubCategories", async (req, res) => {
 
     fashionSnapshot.docs.forEach((doc) => {
       const data = doc.data();
+
+      // ✅ Only include inactive or undefined isActive
+      if (["true", true].includes(data.isActive)) return;
+
       const subCat = data.SubCategory || "Unknown";
 
       if (subCategoryCount[subCat]) {
@@ -1703,6 +1707,10 @@ router.get("/healthcareSubCategories", async (req, res) => {
 
     healthcareSnapshot.docs.forEach((doc) => {
       const data = doc.data();
+
+      // ✅ Skip active items
+      if (["true", true].includes(data.isActive)) return;
+
       const subCat = data.SubCategory || "Unknown";
 
       if (subCategoryCount[subCat]) {
@@ -2039,6 +2047,10 @@ router.get("/sportsGamesSubCategories", async (req, res) => {
 
     sportsSnapshot.docs.forEach((doc) => {
       const data = doc.data();
+
+      // ✅ Skip active listings
+      if (["true", true].includes(data.isActive)) return;
+
       const subCat = data.SubCategory || "Unknown";
 
       if (subCategoryCount[subCat]) {
@@ -2061,6 +2073,7 @@ router.get("/sportsGamesSubCategories", async (req, res) => {
       .json({ error: "Error fetching sports & games subcategories" });
   }
 });
+
 router.get("/petAnimalSubCategories", async (req, res) => {
   try {
     const snapshot = await db.collection("PETANIMALCOMP").get();
@@ -2088,6 +2101,10 @@ router.get("/petAnimalSubCategories", async (req, res) => {
 
     snapshot.docs.forEach((doc) => {
       const data = doc.data();
+
+      // ✅ Only include if isActive is false or not set
+      if (["true", true].includes(data.isActive)) return;
+
       const subCat = data.SubCategory || "Unknown";
 
       if (subCategoryCount[subCat]) {
