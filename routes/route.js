@@ -2114,7 +2114,7 @@ router.get("/petAnimalSubCategories", async (req, res) => {
 router.get("/Education", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase() || "";
-    const subCategory = req.query.subCategory?.toLowerCase() || "";
+    const subCategory = req.query.SubCategory?.toLowerCase() || "";
     console.log(subCategory, "subCategory_______");
     // Get region, city, district filters from query string
     const regionIds = req.query.regionId
