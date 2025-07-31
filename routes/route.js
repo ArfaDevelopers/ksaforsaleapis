@@ -2261,6 +2261,10 @@ router.get("/educationSubCategories", async (req, res) => {
 
     snapshot.docs.forEach((doc) => {
       const data = doc.data();
+
+      // ✅ Only count if isActive is false or "false"
+      if (["true", true].includes(data.isActive)) return;
+
       const subCat = data.SubCategory || "Unknown";
 
       if (subCategoryCount[subCat]) {
