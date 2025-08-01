@@ -1070,6 +1070,40 @@ app.get("/api/user-data", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+// app.get("/api/total-data-count", async (req, res) => {
+//   try {
+//     const collectionNames = [
+//       "Cars",
+//       "PETANIMALCOMP",
+//       "SPORTSGAMESComp",
+//       "REALESTATECOMP",
+//       "TRAVEL",
+//       "JOBBOARD",
+//       "HEALTHCARE",
+//       "FASHION",
+//       "Education",
+//       "ELECTRONICS",
+//     ];
+
+//     let totalInactiveCount = 0;
+
+//     for (const name of collectionNames) {
+//       const snapshot = await db.collection(name).get();
+
+//       snapshot.forEach((doc) => {
+//         const data = doc.data();
+//         if (data.isActive === false) {
+//           totalInactiveCount++;
+//         }
+//       });
+//     }
+
+//     return res.status(200).json({ totalInactiveCount });
+//   } catch (error) {
+//     console.error("Error counting inactive data:", error.message);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// });
 app.get("/api/total-data-count", async (req, res) => {
   try {
     const collectionNames = [
@@ -1085,22 +1119,23 @@ app.get("/api/total-data-count", async (req, res) => {
       "ELECTRONICS",
     ];
 
-    let totalInactiveCount = 0;
+    let totalCount = 0;
 
-    for (const name of collectionNames) {
-      const snapshot = await db.collection(name).get();
+    // Use a Promise.all to run all queries concurrently, improving performance.
+    const promises = collectionNames.map((name) =>
+      db.collection(name).where("isActive", "==", false).get()
+    );
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.isActive === false) {
-          totalInactiveCount++;
-        }
-      });
-    }
+    const snapshots = await Promise.all(promises);
 
-    return res.status(200).json({ totalInactiveCount });
+    // Sum the sizes of all the query snapshots
+    snapshots.forEach((snapshot) => {
+      totalCount += snapshot.size;
+    });
+
+    return res.status(200).json({ totalCount });
   } catch (error) {
-    console.error("Error counting inactive data:", error.message);
+    console.error("Error counting total data:", error.message);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
