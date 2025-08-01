@@ -1119,23 +1119,32 @@ app.get("/api/total-data-count", async (req, res) => {
       "ELECTRONICS",
     ];
 
-    let totalCount = 0;
+    let totalNonActiveCount = 0;
 
-    // Use a Promise.all to run all queries concurrently, improving performance.
-    const promises = collectionNames.map((name) =>
-      // Use the 'in' operator to check for both boolean false and string "false"
-      // This is a robust way to handle potential data type inconsistencies.
-      db.collection(name).where("isActive", "in", [false, "false"]).get()
-    );
+    // Use a Promise.all to run all queries concurrently for better performance
+    const collectionCountsPromises = collectionNames.map(async (name) => {
+      // Step 1: Get the total number of documents in the collection
+      const totalSnapshot = await db.collection(name).get();
+      const totalDocsCount = totalSnapshot.size;
 
-    const snapshots = await Promise.all(promises);
+      // Step 2: Get the number of documents where 'isActive' is true
+      const activeSnapshot = await db
+        .collection(name)
+        .where("isActive", "==", true)
+        .get();
+      const activeDocsCount = activeSnapshot.size;
 
-    // Sum the sizes of all the query snapshots
-    snapshots.forEach((snapshot) => {
-      totalCount += snapshot.size;
+      // Step 3: Subtract the active count from the total count to find non-active
+      return totalDocsCount - activeDocsCount;
     });
 
-    return res.status(200).json({ totalCount });
+    // Wait for all the individual collection counts to be calculated
+    const counts = await Promise.all(collectionCountsPromises);
+
+    // Sum up the results from all collections
+    totalNonActiveCount = counts.reduce((acc, count) => acc + count, 0);
+
+    return res.status(200).json({ totalCount: totalNonActiveCount });
   } catch (error) {
     console.error("Error counting total data:", error.message);
     return res.status(500).json({ error: "Internal server error" });
