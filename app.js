@@ -1119,25 +1119,26 @@ app.get("/api/total-data-count", async (req, res) => {
       "ELECTRONICS",
     ];
 
-    let totalCount = 0;
+    let totalInactiveCount = 0;
 
-    // Use a Promise.all to run all queries concurrently, improving performance.
-    const promises = collectionNames.map((name) =>
-      // Use the 'in' operator to check for both boolean false and string "false"
-      // This is a robust way to handle potential data type inconsistencies.
-      db.collection(name).where("isActive", "in", [false, "false"]).get()
-    );
+    for (const name of collectionNames) {
+      const snapshot = await db.collection(name).get();
 
-    const snapshots = await Promise.all(promises);
+      snapshot.forEach((doc) => {
+        const data = doc.data(); // Only count documents where isActive is strictly false
 
-    // Sum the sizes of all the query snapshots
-    snapshots.forEach((snapshot) => {
-      totalCount += snapshot.size;
-    });
+        if (
+          Object.prototype.hasOwnProperty.call(data, "isActive") &&
+          data.isActive === false
+        ) {
+          totalInactiveCount++;
+        }
+      });
+    }
 
-    return res.status(200).json({ totalCount });
+    return res.status(200).json({ totalInactiveCount });
   } catch (error) {
-    console.error("Error counting total data:", error.message);
+    console.error("Error counting inactive data:", error.message);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
