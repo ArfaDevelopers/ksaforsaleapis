@@ -1123,7 +1123,9 @@ app.get("/api/total-data-count", async (req, res) => {
 
     // Use a Promise.all to run all queries concurrently, improving performance.
     const promises = collectionNames.map((name) =>
-      db.collection(name).where("isActive", "==", false).get()
+      // Use the 'in' operator to check for both boolean false and string "false"
+      // This is a robust way to handle potential data type inconsistencies.
+      db.collection(name).where("isActive", "in", [false, "false"]).get()
     );
 
     const snapshots = await Promise.all(promises);
