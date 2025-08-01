@@ -1085,19 +1085,26 @@ app.get("/api/total-data-count", async (req, res) => {
       "ELECTRONICS",
     ];
 
-    let totalCount = 0;
+    let totalInactiveCount = 0;
 
     for (const name of collectionNames) {
       const snapshot = await db.collection(name).get();
-      totalCount += snapshot.size; // snapshot.size gives the number of documents
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.isActive === false) {
+          totalInactiveCount++;
+        }
+      });
     }
 
-    return res.status(200).json({ totalCount });
+    return res.status(200).json({ totalInactiveCount });
   } catch (error) {
-    console.error("Error counting total data:", error.message);
+    console.error("Error counting inactive data:", error.message);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
 app.get("/api/total-favourite", async (req, res) => {
   try {
     const { userId } = req.query;
