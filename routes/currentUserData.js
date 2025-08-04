@@ -74,16 +74,29 @@ router.post("/receivedMessages", async (req, res) => {
     const snapshot = await messagesRef.where("recieverId", "==", userId).get();
 
     if (snapshot.empty) {
-      return res.status(200).json({ messages: [] }); // No messages found
+      return res.status(200).json({ messages: [] });
     }
 
     const messages = [];
-    snapshot.forEach((doc) => {
+
+    for (const doc of snapshot.docs) {
+      const messageData = doc.data();
+      const senderId = messageData.senderId;
+
+      // Fetch sender info
+      const senderDoc = await db.collection("users").doc(senderId).get();
+      const senderData = senderDoc.exists
+        ? senderDoc.data()
+        : { name: "Unknown" };
+
       messages.push({
         id: doc.id,
-        ...doc.data(),
+        message: messageData.message,
+        senderId,
+        senderName: senderData.name || "Unknown",
+        timestamp: messageData.timestamp || null,
       });
-    });
+    }
 
     return res.status(200).json({ messages });
   } catch (err) {
