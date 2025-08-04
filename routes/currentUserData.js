@@ -73,8 +73,8 @@ router.post("/receivedMessages", async (req, res) => {
     const messagesRef = db
       .collection("messages")
       .where("recieverId", "==", userId)
-      .orderBy("createdAt", "desc") // Sort by latest
-      .limit(30); // Only latest 30
+      .orderBy("createdAt", "desc")
+      .limit(30);
 
     const snapshot = await messagesRef.get();
 
@@ -89,8 +89,7 @@ router.post("/receivedMessages", async (req, res) => {
 
     return res.status(200).json({ messages });
   } catch (err) {
-    // If the issue is missing index, catch it here
-    console.error("Error fetching messages:", err.message || err);
+    console.error("🔥 Firestore Error:", err); // Will include index URL
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
