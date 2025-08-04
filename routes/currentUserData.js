@@ -102,9 +102,7 @@ router.post("/receivedMessages", async (req, res) => {
     const messagesRef = db
       .collection("messages")
       .where("recieverId", "==", userId)
-      .orderBy("createdAt", "desc") // Optional: order by latest first
-      .limit(20); // ✅ Limit to 20 messages
-
+      .orderBy("createdAt", "desc"); // Optional: order by latest first
     const snapshot = await messagesRef.get();
 
     if (snapshot.empty) {
