@@ -70,11 +70,16 @@ router.post("/receivedMessages", async (req, res) => {
   }
 
   try {
-    const messagesRef = db.collection("messages");
-    const snapshot = await messagesRef.where("recieverId", "==", userId).get();
+    const messagesRef = db
+      .collection("messages")
+      .where("recieverId", "==", userId)
+      .orderBy("createdAt", "desc") // sort by newest
+      .limit(30); // latest 30 only
+
+    const snapshot = await messagesRef.get();
 
     if (snapshot.empty) {
-      return res.status(200).json({ messages: [] }); // No messages found
+      return res.status(200).json({ messages: [] });
     }
 
     const messages = [];
