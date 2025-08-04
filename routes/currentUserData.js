@@ -62,6 +62,36 @@ router.post("/userData", async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 });
+router.post("/receivedMessages", async (req, res) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required" });
+  }
+
+  try {
+    const messagesRef = db.collection("messages");
+    const snapshot = await messagesRef.where("recieverId", "==", userId).get();
+
+    if (snapshot.empty) {
+      return res.status(200).json({ messages: [] }); // No messages found
+    }
+
+    const messages = [];
+    snapshot.forEach((doc) => {
+      messages.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return res.status(200).json({ messages });
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    return res.status(500).json({ error: "Failed to fetch messages" });
+  }
+});
+
 router.post("/FASHION", async (req, res) => {
   try {
     const {
