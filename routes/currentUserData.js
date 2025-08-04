@@ -73,8 +73,8 @@ router.post("/receivedMessages", async (req, res) => {
     const messagesRef = db
       .collection("messages")
       .where("recieverId", "==", userId)
-      .orderBy("createdAt", "desc") // sort by newest
-      .limit(30); // latest 30 only
+      .orderBy("createdAt", "desc") // Sort by latest
+      .limit(30); // Only latest 30
 
     const snapshot = await messagesRef.get();
 
@@ -82,17 +82,15 @@ router.post("/receivedMessages", async (req, res) => {
       return res.status(200).json({ messages: [] });
     }
 
-    const messages = [];
-    snapshot.forEach((doc) => {
-      messages.push({
-        id: doc.id,
-        ...doc.data(),
-      });
-    });
+    const messages = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
     return res.status(200).json({ messages });
   } catch (err) {
-    console.error("Error fetching messages:", err);
+    // If the issue is missing index, catch it here
+    console.error("Error fetching messages:", err.message || err);
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
