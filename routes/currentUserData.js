@@ -70,26 +70,24 @@ router.post("/receivedMessages", async (req, res) => {
   }
 
   try {
-    const messagesRef = db
-      .collection("messages")
-      .where("recieverId", "==", userId)
-      .orderBy("createdAt", "desc")
-      .limit(30);
-
-    const snapshot = await messagesRef.get();
+    const messagesRef = db.collection("messages");
+    const snapshot = await messagesRef.where("recieverId", "==", userId).get();
 
     if (snapshot.empty) {
-      return res.status(200).json({ messages: [] });
+      return res.status(200).json({ messages: [] }); // No messages found
     }
 
-    const messages = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const messages = [];
+    snapshot.forEach((doc) => {
+      messages.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
 
     return res.status(200).json({ messages });
   } catch (err) {
-    console.error("🔥 Firestore Error:", err); // Will include index URL
+    console.error("Error fetching messages:", err);
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
