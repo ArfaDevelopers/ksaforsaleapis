@@ -91,7 +91,23 @@ router.post("/receivedMessages", async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
+// Add this new endpoint to your Express router
+router.put("/markAsSeen", async (req, res) => {
+  const { messageId } = req.body;
 
+  if (!messageId) {
+    return res.status(400).json({ error: "messageId is required" });
+  }
+
+  try {
+    const messageRef = db.collection("messages").doc(messageId);
+    await messageRef.update({ seen: true });
+    return res.status(200).json({ message: "Message marked as seen" });
+  } catch (err) {
+    console.error("Error marking message as seen:", err);
+    return res.status(500).json({ error: "Failed to update message" });
+  }
+});
 router.post("/FASHION", async (req, res) => {
   try {
     const {
