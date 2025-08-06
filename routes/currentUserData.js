@@ -100,22 +100,40 @@ router.post("/receivedMessages", async (req, res) => {
   }
 });
 // Add this new endpoint to your Express router
-router.put("/markAsSeen", async (req, res) => {
-  const { messageId } = req.body;
+router.post("/markMessagesSeen", async (req, res) => {
+  const { userId } = req.body;
 
-  if (!messageId) {
-    return res.status(400).json({ error: "messageId is required" });
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required" });
   }
 
   try {
-    const messageRef = db.collection("messages").doc(messageId);
-    await messageRef.update({ seen: true });
-    return res.status(200).json({ message: "Message marked as seen" });
+    const messagesRef = db.collection("messages");
+    const snapshot = await messagesRef
+      .where("recieverId", "==", userId)
+      .where("seen", "==", false)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(200).json({ message: "No unseen messages." });
+    }
+
+    const batch = db.batch();
+
+    snapshot.forEach((doc) => {
+      const docRef = messagesRef.doc(doc.id);
+      batch.update(docRef, { seen: true });
+    });
+
+    await batch.commit();
+
+    return res.status(200).json({ message: "Messages marked as seen." });
   } catch (err) {
-    console.error("Error marking message as seen:", err);
-    return res.status(500).json({ error: "Failed to update message" });
+    console.error("Error marking messages seen:", err.message);
+    return res.status(500).json({ error: "Failed to mark messages as seen" });
   }
 });
+
 router.post("/FASHION", async (req, res) => {
   try {
     const {
