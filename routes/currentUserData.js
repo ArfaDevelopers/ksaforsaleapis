@@ -71,15 +71,13 @@ router.post("/receivedMessages", async (req, res) => {
 
   try {
     const messagesRef = db.collection("messages");
-
-    // 🔥 Apply ordering by createdAt
     const snapshot = await messagesRef
       .where("recieverId", "==", userId)
-      .orderBy("createdAt", "desc")
+      .orderBy("createdAt", "desc") // This is the fix!
       .get();
 
     if (snapshot.empty) {
-      return res.status(200).json({ messages: [] });
+      return res.status(200).json({ messages: [] }); // No messages found
     }
 
     const messages = [];
@@ -92,11 +90,10 @@ router.post("/receivedMessages", async (req, res) => {
 
     return res.status(200).json({ messages });
   } catch (err) {
-    console.error("Error fetching messages:", err.message, err.stack); // Show full error
+    console.error("Error fetching messages:", err);
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
-
 // Add this new endpoint to your Express router
 router.put("/markAsSeen", async (req, res) => {
   const { messageId } = req.body;
