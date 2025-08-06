@@ -1190,8 +1190,14 @@ app.get("/api/total-favourite", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-app.get("/api/dataofmessager", async (req, res) => {
+app.post("/api/dataofmessager", async (req, res) => {
   try {
+    const { id } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing product ID" });
+    }
+
     const collectionNames = [
       "Cars",
       "PETANIMALCOMP",
@@ -1205,27 +1211,27 @@ app.get("/api/dataofmessager", async (req, res) => {
       "ELECTRONICS",
     ];
 
-    const results = [];
+    let matchedData = null;
 
-    // Run queries in parallel for better performance
-    const promises = collectionNames.map(async (name) => {
-      const snapshot = await db
-        .collection(name)
-        .where("isActive", "==", false)
-        .get();
+    for (const name of collectionNames) {
+      const docSnapshot = await db.collection(name).doc(id).get();
+      if (docSnapshot.exists) {
+        matchedData = {
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+          collection: name,
+        };
+        break;
+      }
+    }
 
-      snapshot.forEach((doc) => {
-        results.push({ id: doc.id, ...doc.data(), collection: name });
-      });
-    });
+    if (!matchedData) {
+      return res.status(404).json({ error: "Data not found with given ID" });
+    }
 
-    await Promise.all(promises); // Wait for all queries to finish
-
-    return res
-      .status(200)
-      .json({ totalInactiveItems: results.length, data: results });
+    return res.status(200).json(matchedData);
   } catch (error) {
-    console.error("Error fetching inactive items:", error.message);
+    console.error("Error fetching product by ID:", error.message);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
