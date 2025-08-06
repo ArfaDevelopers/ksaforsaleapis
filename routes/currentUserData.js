@@ -71,13 +71,15 @@ router.post("/receivedMessages", async (req, res) => {
 
   try {
     const messagesRef = db.collection("messages");
+
+    // 🔥 Apply ordering by createdAt
     const snapshot = await messagesRef
       .where("recieverId", "==", userId)
       .orderBy("createdAt", "desc")
       .get();
 
     if (snapshot.empty) {
-      return res.status(200).json({ messages: [] }); // No messages found
+      return res.status(200).json({ messages: [] });
     }
 
     const messages = [];
@@ -90,7 +92,7 @@ router.post("/receivedMessages", async (req, res) => {
 
     return res.status(200).json({ messages });
   } catch (err) {
-    console.error("Error fetching messages:", err);
+    console.error("Error fetching messages:", err.message, err.stack); // Show full error
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
