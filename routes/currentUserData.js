@@ -72,7 +72,7 @@ router.post("/receivedMessages", async (req, res) => {
   try {
     const messagesRef = db.collection("messages");
     const snapshot = await messagesRef
-      .where("recieverId", "==", userId)
+      .where("recieverId", "==", "userId")
       .orderBy("createdAt", "desc") // This is the fix!
       .get();
 
