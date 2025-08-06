@@ -1190,6 +1190,46 @@ app.get("/api/total-favourite", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+app.get("/api/dataofmessager", async (req, res) => {
+  try {
+    const collectionNames = [
+      "Cars",
+      "PETANIMALCOMP",
+      "SPORTSGAMESComp",
+      "REALESTATECOMP",
+      "TRAVEL",
+      "JOBBOARD",
+      "HEALTHCARE",
+      "FASHION",
+      "Education",
+      "ELECTRONICS",
+    ];
+
+    const results = [];
+
+    // Run queries in parallel for better performance
+    const promises = collectionNames.map(async (name) => {
+      const snapshot = await db
+        .collection(name)
+        .where("isActive", "==", false)
+        .get();
+
+      snapshot.forEach((doc) => {
+        results.push({ id: doc.id, ...doc.data(), collection: name });
+      });
+    });
+
+    await Promise.all(promises); // Wait for all queries to finish
+
+    return res
+      .status(200)
+      .json({ totalInactiveItems: results.length, data: results });
+  } catch (error) {
+    console.error("Error fetching inactive items:", error.message);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 app.get("/api/total-messages", async (req, res) => {
   try {
     const snapshot = await db
