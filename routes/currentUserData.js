@@ -91,7 +91,7 @@ router.post("/receivedMessages", async (req, res) => {
     return res.status(200).json({ messages });
   } catch (err) {
     console.error("Error fetching messages:", err);
-    return res.status(500).json({ error: "Failed to fetch messages" });
+    return res.status(500).json({ err: "Failed to fetch messages" });
   }
 });
 // Add this new endpoint to your Express router
