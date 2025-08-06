@@ -1192,15 +1192,19 @@ app.get("/api/total-favourite", async (req, res) => {
 });
 app.get("/api/total-messages", async (req, res) => {
   try {
-    const snapshot = await db.collection("messages").get();
-    const totalMessages = snapshot.size;
+    const snapshot = await db
+      .collection("messages")
+      .where("seen", "==", false)
+      .get();
+    const unseenMessagesCount = snapshot.size;
 
-    return res.status(200).json({ totalMessages });
+    return res.status(200).json({ unseenMessagesCount });
   } catch (error) {
-    console.error("Error counting messages:", error.message);
+    console.error("Error counting unseen messages:", error.message);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
 app.get("/api/totalAmount", async (req, res) => {
   try {
     const collectionNames = [
