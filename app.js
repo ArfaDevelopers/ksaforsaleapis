@@ -108,7 +108,6 @@ app.get("/search", async (req, res) => {
   if (!query) return res.status(400).json({ error: "Missing query string" });
 
   const db = getFirestore();
-
   const collections = [
     "Cars",
     "ELECTRONICS",
@@ -127,11 +126,13 @@ app.get("/search", async (req, res) => {
       return (
         text
           ?.toLowerCase()
-          .replace(/[^\w\s]|_/g, " ") // remove punctuation
-          .replace(/\s+/g, " ") // normalize spaces
+          .replace(/[^\w\s]|_/g, " ") // punctuation to space
+          .replace(/\s+/g, " ") // collapse multiple spaces
           .trim() || ""
       );
     };
+
+    const normalizedQuery = normalizeText(query);
 
     const promises = collections.map((collectionName) =>
       db
@@ -146,8 +147,10 @@ app.get("/search", async (req, res) => {
               const title = normalizeText(data.title || "");
               const description = normalizeText(data.description || "");
 
-              // Check if normalized query exists in normalized title or description
-              if (title.includes(query) || description.includes(query)) {
+              if (
+                title.includes(normalizedQuery) ||
+                description.includes(normalizedQuery)
+              ) {
                 return {
                   id: doc.id,
                   title: data.title,
@@ -156,7 +159,6 @@ app.get("/search", async (req, res) => {
                   image: data.galleryImages?.[0] || null,
                 };
               }
-
               return null;
             })
             .filter(Boolean)
