@@ -104,7 +104,7 @@ const getOrCreateChat = async (sender, receiver) => {
   }
 };
 app.get("/search", async (req, res) => {
-  const query = req.query.q?.toLowerCase();
+  const query = req.query.q?.toLowerCase().trim();
   if (!query) return res.status(400).json({ error: "Missing query string" });
 
   const db = getFirestore();
@@ -123,6 +123,16 @@ app.get("/search", async (req, res) => {
   ];
 
   try {
+    const normalizeText = (text) => {
+      return (
+        text
+          ?.toLowerCase()
+          .replace(/[^\w\s]|_/g, " ") // remove punctuation
+          .replace(/\s+/g, " ") // normalize spaces
+          .trim() || ""
+      );
+    };
+
     const promises = collections.map((collectionName) =>
       db
         .collection(collectionName)
@@ -133,10 +143,10 @@ app.get("/search", async (req, res) => {
             .map((doc) => {
               const data = doc.data();
 
-              const title = data.title?.toLowerCase() || "";
-              const description = data.description?.toLowerCase() || "";
+              const title = normalizeText(data.title || "");
+              const description = normalizeText(data.description || "");
 
-              // Check if query exists in either title OR description
+              // Check if normalized query exists in normalized title or description
               if (title.includes(query) || description.includes(query)) {
                 return {
                   id: doc.id,
