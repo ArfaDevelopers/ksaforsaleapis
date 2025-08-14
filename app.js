@@ -104,7 +104,7 @@ const getOrCreateChat = async (sender, receiver) => {
   }
 };
 app.get("/search", async (req, res) => {
-  const query = req.query.q?.toLowerCase().trim();
+  const query = req.query.q?.trim();
   if (!query) return res.status(400).json({ error: "Missing query string" });
 
   const db = getFirestore();
@@ -126,8 +126,8 @@ app.get("/search", async (req, res) => {
       return (
         text
           ?.toLowerCase()
-          .replace(/[^\w\s]|_/g, " ") // punctuation to space
-          .replace(/\s+/g, " ") // collapse multiple spaces
+          .replace(/[^\w\s]|_/g, " ") // replace punctuation with space
+          .replace(/\s+/g, " ") // collapse spaces
           .trim() || ""
       );
     };
@@ -137,7 +137,6 @@ app.get("/search", async (req, res) => {
     const promises = collections.map((collectionName) =>
       db
         .collection(collectionName)
-        .where("isActive", "==", false)
         .get()
         .then((snapshot) =>
           snapshot.docs
