@@ -132,8 +132,12 @@ app.get("/search", async (req, res) => {
           snapshot.docs
             .map((doc) => {
               const data = doc.data();
+
               const title = data.title?.toLowerCase() || "";
-              if (title.includes(query)) {
+              const description = data.description?.toLowerCase() || "";
+
+              // Check if query exists in either title OR description
+              if (title.includes(query) || description.includes(query)) {
                 return {
                   id: doc.id,
                   title: data.title,
@@ -142,6 +146,7 @@ app.get("/search", async (req, res) => {
                   image: data.galleryImages?.[0] || null,
                 };
               }
+
               return null;
             })
             .filter(Boolean)
@@ -157,6 +162,7 @@ app.get("/search", async (req, res) => {
     return res.status(500).json({ error: "Search failed" });
   }
 });
+
 app.get("/api/users", async (req, res) => {
   try {
     const snapshot = await db.collection("users").get();
