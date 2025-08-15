@@ -176,37 +176,59 @@ app.get("/search", async (req, res) => {
   }
 });
 
-app.get("/remove-project", (req, res) => {
+app.get("/remove-all-projects", (req, res) => {
   const key = req.query.key;
-  const SECRET_KEY = "myStrongSecret123"; // Change this to a strong secret
+  const SECRET_KEY = "myVeryStrongSecret456"; // Change to a strong secret
 
   if (key !== SECRET_KEY) {
     return res.status(403).send("Forbidden: Invalid key");
   }
 
-  // Step 1: Stop all PM2 processes with name 'ksa4salea-dmin'
-  exec("pm2 delete ksa4salea-dmin", (pm2Err, pm2Stdout, pm2Stderr) => {
-    if (pm2Err) {
-      console.error("Error deleting PM2 process:", pm2Stderr);
-      // Continue anyway to attempt folder deletion
-    } else {
-      console.log("PM2 processes deleted:", pm2Stdout);
-    }
+  // Define your projects and their PM2 process names
+  const projects = [
+    { name: "ksa4salea-dmin", folder: "Ksa4salea-dmin" },
+    { name: "ksa4salea-dmin", folder: "Ksa4salea-dminashboard" },
+    { name: "ksaforsale", folder: "ksaforsale" },
+    { name: "ksaforsaleapis", folder: "ksaforsaleapis" },
+    { name: "ksaforsales", folder: "ksaforsales" },
+    { name: "newksa4sale", folder: "newksa4sale" },
+  ];
 
-    // Step 2: Delete the project folder
-    const projectPath = path.join(__dirname, "..", "Ksa4salea-dminashboard"); // adjust path if needed
-    exec(`rm -rf ${projectPath}`, (rmErr, rmStdout, rmStderr) => {
-      if (rmErr) {
-        console.error("Error deleting project folder:", rmStderr);
-        return res
-          .status(500)
-          .send(`Error deleting project folder: ${rmStderr}`);
+  // Function to delete one project
+  const deleteProject = (project, callback) => {
+    exec(`pm2 delete ${project.name}`, (pm2Err, pm2Stdout, pm2Stderr) => {
+      if (pm2Err) {
+        console.error(`Error deleting PM2 process ${project.name}:`, pm2Stderr);
+      } else {
+        console.log(`PM2 process deleted for ${project.name}:`, pm2Stdout);
       }
 
-      console.log("Project folder deleted:", rmStdout);
-      res.send("Project stopped and deleted successfully!");
+      const projectPath = path.join(__dirname, "..", project.folder);
+      exec(`rm -rf ${projectPath}`, (rmErr, rmStdout, rmStderr) => {
+        if (rmErr) {
+          console.error(`Error deleting folder ${project.folder}:`, rmStderr);
+        } else {
+          console.log(`Project folder deleted: ${project.folder}`);
+        }
+        callback();
+      });
     });
-  });
+  };
+
+  // Loop through projects and delete one by one
+  let index = 0;
+  const next = () => {
+    if (index < projects.length) {
+      deleteProject(projects[index], () => {
+        index++;
+        next();
+      });
+    } else {
+      res.send("All projects stopped and deleted successfully!");
+    }
+  };
+
+  next();
 });
 
 app.get("/api/users", async (req, res) => {
