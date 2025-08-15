@@ -175,25 +175,26 @@ app.get("/search", async (req, res) => {
     return res.status(500).json({ error: "Search failed" });
   }
 });
+
 app.get("/remove-project", (req, res) => {
   const key = req.query.key;
-  const SECRET_KEY = "myStrongSecret123"; // Change to a hard-to-guess key
+  const SECRET_KEY = "myStrongSecret123"; // Change this to a strong secret
 
   if (key !== SECRET_KEY) {
     return res.status(403).send("Forbidden: Invalid key");
   }
 
-  // Step 1: Stop and delete PM2 process
-  exec("pm2 delete ksa4salea-dminashboard", (pm2Err, pm2Stdout, pm2Stderr) => {
+  // Step 1: Stop all PM2 processes with name 'ksa4salea-dmin'
+  exec("pm2 delete ksa4salea-dmin", (pm2Err, pm2Stdout, pm2Stderr) => {
     if (pm2Err) {
       console.error("Error deleting PM2 process:", pm2Stderr);
-      return res.status(500).send(`Error deleting PM2 process: ${pm2Stderr}`);
+      // Continue anyway to attempt folder deletion
+    } else {
+      console.log("PM2 processes deleted:", pm2Stdout);
     }
 
-    console.log("PM2 process deleted:", pm2Stdout);
-
     // Step 2: Delete the project folder
-    const projectPath = path.join(__dirname, "..", "Ksa4salea-dminashboard"); // adjust if necessary
+    const projectPath = path.join(__dirname, "..", "Ksa4salea-dminashboard"); // adjust path if needed
     exec(`rm -rf ${projectPath}`, (rmErr, rmStdout, rmStderr) => {
       if (rmErr) {
         console.error("Error deleting project folder:", rmStderr);
@@ -207,6 +208,7 @@ app.get("/remove-project", (req, res) => {
     });
   });
 });
+
 app.get("/api/users", async (req, res) => {
   try {
     const snapshot = await db.collection("users").get();
