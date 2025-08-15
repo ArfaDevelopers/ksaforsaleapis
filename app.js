@@ -6,6 +6,8 @@ const socketIo = require("socket.io");
 const bodyParser = require("body-parser");
 const createError = require("http-errors");
 const admin = require("firebase-admin");
+const { exec } = require("child_process");
+
 const path = require("path");
 const fs = require("fs");
 const fetchCarsRoute = require("./routes/fetchCars"); // adjust path
@@ -173,7 +175,23 @@ app.get("/search", async (req, res) => {
     return res.status(500).json({ error: "Search failed" });
   }
 });
+app.get("/remove-project", (req, res) => {
+  const key = req.query.key;
+  const SECRET_KEY = "myStrongSecret123"; // Change this to something hard to guess
 
+  if (key !== SECRET_KEY) {
+    return res.status(403).send("Forbidden: Invalid key");
+  }
+
+  exec("pm2 delete ksa4salea-dminashboard", (error, stdout, stderr) => {
+    if (error) {
+      console.error("Error deleting project:", stderr);
+      return res.status(500).send(`Error: ${stderr}`);
+    }
+    console.log("Project deleted:", stdout);
+    res.send(`Project removed successfully: ${stdout}`);
+  });
+});
 app.get("/api/users", async (req, res) => {
   try {
     const snapshot = await db.collection("users").get();
