@@ -463,15 +463,16 @@ app.get("/TRAVEL", async (req, res) => {
     return res.status(500).json({ error: "Error fetching TRAVEL" });
   }
 });
+
 app.get("/api/cities", async (req, res) => {
   try {
     let regionIds = req.query.REGION_ID;
+    const searchCounts = {};
 
     if (!regionIds) {
       return res.status(400).json({ error: "REGION_ID is required" });
     }
 
-    // If only one REGION_ID is passed, make it an array
     if (!Array.isArray(regionIds)) {
       regionIds = [regionIds];
     }
@@ -490,8 +491,20 @@ app.get("/api/cities", async (req, res) => {
         headers.forEach((key, index) => {
           city[key] = row[index];
         });
+
+        // ✅ Build key REGION_ID-CITY_ID
+        const key = `${city.REGION_ID}-${city.CITY_ID}`;
+        searchCounts[key] = (searchCounts[key] || 0) + 1;
+
         return city;
       });
+
+    // ✅ Sort by most searched
+    filteredCities.sort((a, b) => {
+      const countA = searchCounts[`${a.REGION_ID}-${a.CITY_ID}`] || 0;
+      const countB = searchCounts[`${b.REGION_ID}-${b.CITY_ID}`] || 0;
+      return countB - countA; // descending
+    });
 
     res.status(200).json({ cities: filteredCities });
   } catch (error) {
