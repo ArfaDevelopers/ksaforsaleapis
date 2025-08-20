@@ -337,6 +337,10 @@ router.get("/cars", async (req, res) => {
     let regionIds = req.query.regionId;
     const CITY_ID = req.query.CITY_ID;
     const DISTRICT_ID = req.query.DISTRICT_ID;
+    const fromMileage = req.query.fromMileage
+      ? Number(req.query.fromMileage)
+      : null;
+    const toMileage = req.query.toMileage ? Number(req.query.toMileage) : null;
 
     const carsSnapshot = await db.collection("Cars").get();
     const now = Date.now();
@@ -414,6 +418,14 @@ router.get("/cars", async (req, res) => {
       );
     }
 
+    // ✅ Mileage filter
+    if (fromMileage !== null && toMileage !== null) {
+      filteredCars = filteredCars.filter((car) => {
+        const mileage = Number(car.mileage) || 0;
+        return mileage >= fromMileage && mileage <= toMileage;
+      });
+    }
+
     // ✅ Featured Ads first, then latest
     filteredCars.sort((a, b) => {
       const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
@@ -434,6 +446,7 @@ router.get("/cars", async (req, res) => {
     return res.status(500).json({ error: "Error fetching cars" });
   }
 });
+
 router.get("/carsSubCategories", async (req, res) => {
   try {
     const carsSnapshot = await db.collection("Cars").get();
