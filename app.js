@@ -463,11 +463,11 @@ app.get("/TRAVEL", async (req, res) => {
     return res.status(500).json({ error: "Error fetching TRAVEL" });
   }
 });
+const searchCounts = {};
 
 app.get("/api/cities", async (req, res) => {
   try {
     let regionIds = req.query.REGION_ID;
-    const searchCounts = {};
 
     if (!regionIds) {
       return res.status(400).json({ error: "REGION_ID is required" });
@@ -544,6 +544,9 @@ app.get("/api/cities", async (req, res) => {
 //     res.status(500).json({ error: "Internal server error" });
 //   }
 // });
+// ✅ Keep it outside so counts persist
+const districtSearchCounts = {};
+
 app.get("/api/districts", async (req, res) => {
   try {
     const { REGION_ID, CITY_ID } = req.query;
@@ -565,15 +568,31 @@ app.get("/api/districts", async (req, res) => {
       .filter((row) => {
         const matchesRegion = REGION_ID ? row[0] === REGION_ID : false;
         const matchesCity = CITY_ID ? row[1] === CITY_ID : false;
-        return matchesRegion || matchesCity; // ✅ FIXED: allow either match
+        return matchesRegion || matchesCity;
       })
       .map((row) => {
         const district = {};
         headers.forEach((key, index) => {
           district[key] = row[index];
         });
+
+        // ✅ Track searches (REGION_ID-CITY_ID-DISTRICT_ID key)
+        const key = `${district.REGION_ID}-${district.CITY_ID}-${district.District_ID}`;
+        districtSearchCounts[key] = (districtSearchCounts[key] || 0) + 1;
+
         return district;
       });
+
+    // ✅ Sort by most searched
+    filteredDistricts.sort((a, b) => {
+      const countA =
+        districtSearchCounts[`${a.REGION_ID}-${a.CITY_ID}-${a.District_ID}`] ||
+        0;
+      const countB =
+        districtSearchCounts[`${b.REGION_ID}-${b.CITY_ID}-${b.District_ID}`] ||
+        0;
+      return countB - countA;
+    });
 
     res.status(200).json({ districts: filteredDistricts });
   } catch (error) {
@@ -581,6 +600,7 @@ app.get("/api/districts", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 app.get("/api/our-category-OurCategoryHealthCare", async (req, res) => {
   try {
     const snapshot = await db.collection("OurCategoryHealthCare").get();
