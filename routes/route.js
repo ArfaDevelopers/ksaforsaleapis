@@ -2004,6 +2004,7 @@ router.get("/TRAVEL", async (req, res) => {
 router.get("/SPORTSGAMESComp", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase() || "";
+    const sortBy = req.query.sortBy || "Sort by: Most Relevant"; // ✅ default
 
     // ✅ Handle multi-value filters
     const regionIds = req.query.regionId
@@ -2051,12 +2052,12 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       })
     );
 
-    // ✅ Filter inactive listings
+    // ✅ Filter inactive
     let filtered = data.filter(
       (item) => !["true", true].includes(item.isActive)
     );
 
-    // ✅ Apply search filter
+    // ✅ Search filter
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -2069,37 +2070,44 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
       });
     }
 
-    // ✅ Apply region filter (multi)
+    // ✅ Region filter
     if (regionIds.length > 0) {
       filtered = filtered.filter((item) =>
         regionIds.includes(String(item.regionId))
       );
     }
 
-    // ✅ Apply city filter (multi)
+    // ✅ City filter
     if (cityIds.length > 0) {
       filtered = filtered.filter((item) =>
         cityIds.includes(String(item.CITY_ID))
       );
     }
 
-    // ✅ Apply district filter (multi)
+    // ✅ District filter
     if (districtIds.length > 0) {
       filtered = filtered.filter((item) =>
         districtIds.includes(String(item.District_ID))
       );
     }
 
-    // ✅ Sort by Featured Ads first, then most recent
-    filtered.sort((a, b) => {
-      const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
-      const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
-      if (aFeatured !== bFeatured) return bFeatured - aFeatured;
+    // ✅ Sorting
+    if (sortBy === "Price: Low to High") {
+      filtered.sort((a, b) => (Number(a.Price) || 0) - (Number(b.Price) || 0));
+    } else if (sortBy === "Price: High to Low") {
+      filtered.sort((a, b) => (Number(b.Price) || 0) - (Number(a.Price) || 0));
+    } else {
+      // Default → Featured first, then newest
+      filtered.sort((a, b) => {
+        const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+        const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+        if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
-      const aTime = a.createdAt?._seconds || 0;
-      const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime;
-    });
+        const aTime = a.createdAt?._seconds || 0;
+        const bTime = b.createdAt?._seconds || 0;
+        return bTime - aTime;
+      });
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -2107,6 +2115,7 @@ router.get("/SPORTSGAMESComp", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 router.get("/sportsGamesSubCategories", async (req, res) => {
   try {
     const sportsSnapshot = await db.collection("SPORTSGAMESComp").get();
