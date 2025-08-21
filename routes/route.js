@@ -1883,6 +1883,7 @@ router.get("/healthcareSubCategories", async (req, res) => {
 router.get("/TRAVEL", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase() || "";
+    const sortBy = req.query.sortBy || "Sort by: Most Relevant"; // ✅ default
 
     // Get region, city, district filters from query string
     const regionIds = req.query.regionId
@@ -1974,17 +1975,24 @@ router.get("/TRAVEL", async (req, res) => {
       );
     }
 
-    // Sort: Featured Ads first, then newest
-    filtered.sort((a, b) => {
-      const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
-      const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+    // ✅ Sorting
+    if (sortBy === "Price: Low to High") {
+      filtered.sort((a, b) => (Number(a.Price) || 0) - (Number(b.Price) || 0));
+    } else if (sortBy === "Price: High to Low") {
+      filtered.sort((a, b) => (Number(b.Price) || 0) - (Number(a.Price) || 0));
+    } else {
+      // Default -> Featured Ads first, then newest
+      filtered.sort((a, b) => {
+        const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+        const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
-      if (aFeatured !== bFeatured) return bFeatured - aFeatured;
+        if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
-      const aTime = a.createdAt?._seconds || 0;
-      const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime;
-    });
+        const aTime = a.createdAt?._seconds || 0;
+        const bTime = b.createdAt?._seconds || 0;
+        return bTime - aTime;
+      });
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
