@@ -948,6 +948,7 @@ router.get("/ELECTRONICS", async (req, res) => {
 router.get("/REALESTATECOMP", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
+    const sortBy = req.query.sortBy || "Sort by: Most Relevant"; // ✅ default
 
     // ✅ Handle multiple regionId, CITY_ID, DISTRICT_ID values
     const regionIds = req.query.regionId
@@ -1039,19 +1040,26 @@ router.get("/REALESTATECOMP", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured Ads first, then newest
-    filtered.sort((a, b) => {
-      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
-      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+    // ✅ Sorting
+    if (sortBy === "Price: Low to High") {
+      filtered.sort((a, b) => (Number(a.Price) || 0) - (Number(b.Price) || 0));
+    } else if (sortBy === "Price: High to Low") {
+      filtered.sort((a, b) => (Number(b.Price) || 0) - (Number(a.Price) || 0));
+    } else {
+      // Default -> Featured Ads first, then newest
+      filtered.sort((a, b) => {
+        const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+        const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
-      if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured;
-      }
+        if (aIsFeatured !== bIsFeatured) {
+          return bIsFeatured - aIsFeatured;
+        }
 
-      const aTime = a.createdAt?._seconds || 0;
-      const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime;
-    });
+        const aTime = a.createdAt?._seconds || 0;
+        const bTime = b.createdAt?._seconds || 0;
+        return bTime - aTime;
+      });
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -1059,6 +1067,7 @@ router.get("/REALESTATECOMP", async (req, res) => {
     return res.status(500).json({ error: "Error fetching REALESTATECOMP" });
   }
 });
+
 router.get("/JOBBOARD", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase();
