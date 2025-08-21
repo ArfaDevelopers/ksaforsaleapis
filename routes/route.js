@@ -694,16 +694,27 @@ router.get("/commercial-ads", async (req, res) => {
 
 router.get("/PETANIMALCOMP", async (req, res) => {
   try {
-    const searchText = req.query.searchText?.toLowerCase();
+    const searchText = req.query.searchText?.toLowerCase() || "";
+    const sortBy = req.query.sortBy || "Sort by: Most Relevant";
 
     // ✅ Normalize query params to arrays
-    let regionIds = req.query.regionId;
-    let cityIds = req.query.CITY_ID;
-    let districtIds = req.query.DISTRICT_ID;
+    const regionIds = req.query.regionId
+      ? Array.isArray(req.query.regionId)
+        ? req.query.regionId
+        : req.query.regionId.split(",")
+      : [];
 
-    if (regionIds && !Array.isArray(regionIds)) regionIds = [regionIds];
-    if (cityIds && !Array.isArray(cityIds)) cityIds = [cityIds];
-    if (districtIds && !Array.isArray(districtIds)) districtIds = [districtIds];
+    const cityIds = req.query.CITY_ID
+      ? Array.isArray(req.query.CITY_ID)
+        ? req.query.CITY_ID
+        : req.query.CITY_ID.split(",")
+      : [];
+
+    const districtIds = req.query.DISTRICT_ID
+      ? Array.isArray(req.query.DISTRICT_ID)
+        ? req.query.DISTRICT_ID
+        : req.query.DISTRICT_ID.split(",")
+      : [];
 
     const snapshot = await db.collection("PETANIMALCOMP").get();
     const now = Date.now();
@@ -714,7 +725,7 @@ router.get("/PETANIMALCOMP", async (req, res) => {
         const docData = doc.data();
         const createdAt = docData.createdAt?.toDate?.() || null;
 
-        // Auto-expire featured ads
+        // ✅ Auto-expire featured ads
         if (
           docData.FeaturedAds === "Featured Ads" &&
           createdAt &&
@@ -729,21 +740,16 @@ router.get("/PETANIMALCOMP", async (req, res) => {
           docData.featuredAt = null;
         }
 
-        return {
-          id: doc.id,
-          ...docData,
-        };
+        return { id: doc.id, ...docData };
       })
     );
 
-    const inactiveItems = data.filter((item) => {
-      const isActive = item.isActive;
-      return isActive !== true && isActive !== "true";
-    });
+    // ✅ Only active = false items
+    let filtered = data.filter(
+      (item) => !["true", true].includes(item.isActive)
+    );
 
-    let filtered = inactiveItems;
-
-    // 🔍 Filter by searchText
+    // 🔍 Search filter
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -756,40 +762,44 @@ router.get("/PETANIMALCOMP", async (req, res) => {
       });
     }
 
-    // ✅ Filter by regionIds
-    if (regionIds?.length) {
+    // ✅ Region filter
+    if (regionIds.length > 0) {
       filtered = filtered.filter((item) =>
         regionIds.includes(String(item.regionId))
       );
     }
 
-    // ✅ Filter by CITY_IDs
-    if (cityIds?.length) {
+    // ✅ City filter
+    if (cityIds.length > 0) {
       filtered = filtered.filter((item) =>
         cityIds.includes(String(item.CITY_ID))
       );
     }
 
-    // ✅ Filter by DISTRICT_IDs
-    if (districtIds?.length) {
+    // ✅ District filter
+    if (districtIds.length > 0) {
       filtered = filtered.filter((item) =>
         districtIds.includes(String(item.District_ID))
       );
     }
 
-    // ✅ Sort: Featured Ads first, then by createdAt descending (newest first)
-    filtered.sort((a, b) => {
-      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
-      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+    // ✅ Sorting
+    if (sortBy === "Price: Low to High") {
+      filtered.sort((a, b) => (Number(a.Price) || 0) - (Number(b.Price) || 0));
+    } else if (sortBy === "Price: High to Low") {
+      filtered.sort((a, b) => (Number(b.Price) || 0) - (Number(a.Price) || 0));
+    } else {
+      // Default: Featured first → Newest
+      filtered.sort((a, b) => {
+        const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+        const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+        if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
-      if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured;
-      }
-
-      const aTime = a.createdAt?._seconds || 0;
-      const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime;
-    });
+        const aTime = a.createdAt?._seconds || 0;
+        const bTime = b.createdAt?._seconds || 0;
+        return bTime - aTime;
+      });
+    }
 
     return res.status(200).json(filtered);
   } catch (error) {
@@ -2218,9 +2228,9 @@ router.get("/petAnimalSubCategories", async (req, res) => {
 router.get("/Education", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase() || "";
-    const subCategory = req.query.SubCategory?.toLowerCase() || "";
-    console.log(subCategory, "subCategory_______");
-    // Get region, city, district filters from query string
+    const subCategory = req.query.SubCategory?.toLowerCase().trim() || "";
+
+    // ✅ Normalize filters
     const regionIds = req.query.regionId
       ? Array.isArray(req.query.regionId)
         ? req.query.regionId
@@ -2249,7 +2259,7 @@ router.get("/Education", async (req, res) => {
         const docData = doc.data();
         const createdAt = docData.createdAt?.toDate?.() || null;
 
-        // Auto-expire Featured Ads
+        // ✅ Auto-expire featured ads after 1 week
         if (
           docData.FeaturedAds === "Featured Ads" &&
           createdAt &&
@@ -2264,19 +2274,16 @@ router.get("/Education", async (req, res) => {
           docData.featuredAt = null;
         }
 
-        return {
-          id: doc.id,
-          ...docData,
-        };
+        return { id: doc.id, ...docData };
       })
     );
 
-    // Filter inactive only
+    // ✅ Only inactive ads
     let filtered = data.filter(
       (item) => !["true", true].includes(item.isActive)
     );
 
-    // Search filter
+    // 🔍 Search filter
     if (searchText) {
       filtered = filtered.filter((item) => {
         const titleMatch = item.title?.toLowerCase().includes(searchText);
@@ -2289,40 +2296,38 @@ router.get("/Education", async (req, res) => {
       });
     }
 
+    // ✅ SubCategory filter
     if (subCategory) {
       filtered = filtered.filter(
-        (item) =>
-          item.SubCategory?.toLowerCase().trim() ===
-          subCategory.toLowerCase().trim()
+        (item) => item.SubCategory?.toLowerCase().trim() === subCategory
       );
     }
 
-    // Region filter
+    // ✅ Region filter
     if (regionIds.length > 0) {
       filtered = filtered.filter((item) =>
         regionIds.includes(String(item.regionId))
       );
     }
 
-    // City filter
+    // ✅ City filter
     if (cityIds.length > 0) {
       filtered = filtered.filter((item) =>
         cityIds.includes(String(item.CITY_ID))
       );
     }
 
-    // District filter
+    // ✅ District filter
     if (districtIds.length > 0) {
       filtered = filtered.filter((item) =>
         districtIds.includes(String(item.District_ID))
       );
     }
 
-    // Sort: Featured Ads first, then newest
+    // ✅ Sort: Featured first → Newest
     filtered.sort((a, b) => {
       const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
-
       if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
       const aTime = a.createdAt?._seconds || 0;
