@@ -2229,6 +2229,7 @@ router.get("/Education", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase() || "";
     const subCategory = req.query.SubCategory?.toLowerCase().trim() || "";
+    const sortBy = req.query.SortBy || "newest"; // ✅ default
 
     // ✅ Normalize filters
     const regionIds = req.query.regionId
@@ -2259,7 +2260,7 @@ router.get("/Education", async (req, res) => {
         const docData = doc.data();
         const createdAt = docData.createdAt?.toDate?.() || null;
 
-        // ✅ Auto-expire featured ads after 1 week
+        // Auto-expire Featured Ads after 1 week
         if (
           docData.FeaturedAds === "Featured Ads" &&
           createdAt &&
@@ -2324,12 +2325,22 @@ router.get("/Education", async (req, res) => {
       );
     }
 
-    // ✅ Sort: Featured first → Newest
+    // ✅ Sorting logic
     filtered.sort((a, b) => {
       const aFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
       const bFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+
+      // Featured Ads first
       if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
+      if (sortBy === "priceLow") {
+        return (a.price || 0) - (b.price || 0);
+      }
+      if (sortBy === "priceHigh") {
+        return (b.price || 0) - (a.price || 0);
+      }
+
+      // Default = newest
       const aTime = a.createdAt?._seconds || 0;
       const bTime = b.createdAt?._seconds || 0;
       return bTime - aTime;
