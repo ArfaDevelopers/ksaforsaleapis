@@ -341,6 +341,7 @@ router.get("/cars", async (req, res) => {
       ? Number(req.query.fromMileage)
       : null;
     const toMileage = req.query.toMileage ? Number(req.query.toMileage) : null;
+    const sortBy = req.query.sortBy || "Sort by: Most Relevant"; // ✅
 
     const carsSnapshot = await db.collection("Cars").get();
     const now = Date.now();
@@ -426,19 +427,30 @@ router.get("/cars", async (req, res) => {
       });
     }
 
-    // ✅ Featured Ads first, then latest
-    filteredCars.sort((a, b) => {
-      const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
-      const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
+    // ✅ Sorting
+    if (sortBy === "Price: Low to High") {
+      filteredCars.sort(
+        (a, b) => (Number(a.Price) || 0) - (Number(b.Price) || 0)
+      );
+    } else if (sortBy === "Price: High to Low") {
+      filteredCars.sort(
+        (a, b) => (Number(b.Price) || 0) - (Number(a.Price) || 0)
+      );
+    } else {
+      // Default -> Featured Ads first, then latest (by createdAt)
+      filteredCars.sort((a, b) => {
+        const aIsFeatured = a.FeaturedAds === "Featured Ads" ? 1 : 0;
+        const bIsFeatured = b.FeaturedAds === "Featured Ads" ? 1 : 0;
 
-      if (aIsFeatured !== bIsFeatured) {
-        return bIsFeatured - aIsFeatured;
-      }
+        if (aIsFeatured !== bIsFeatured) {
+          return bIsFeatured - aIsFeatured;
+        }
 
-      const aTime = a.createdAt?._seconds || 0;
-      const bTime = b.createdAt?._seconds || 0;
-      return bTime - aTime;
-    });
+        const aTime = a.createdAt?._seconds || 0;
+        const bTime = b.createdAt?._seconds || 0;
+        return bTime - aTime;
+      });
+    }
 
     return res.status(200).json(filteredCars);
   } catch (error) {
