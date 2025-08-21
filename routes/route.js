@@ -2229,7 +2229,13 @@ router.get("/Education", async (req, res) => {
   try {
     const searchText = req.query.searchText?.toLowerCase() || "";
     const subCategory = req.query.SubCategory?.toLowerCase().trim() || "";
-    const sortBy = req.query.SortBy || "newest"; // ✅ default
+    let sortBy = req.query.SortBy || "Newest"; // default
+
+    // 🔹 Normalize SortBy values
+    sortBy = sortBy.trim();
+    if (sortBy.toLowerCase() === "price: low to high") sortBy = "priceLow";
+    if (sortBy.toLowerCase() === "price: high to low") sortBy = "priceHigh";
+    if (sortBy.toLowerCase() === "newest") sortBy = "newest";
 
     // ✅ Normalize filters
     const regionIds = req.query.regionId
@@ -2334,10 +2340,10 @@ router.get("/Education", async (req, res) => {
       if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
       if (sortBy === "priceLow") {
-        return (a.price || 0) - (b.price || 0);
+        return (Number(a.Price) || 0) - (Number(b.Price) || 0);
       }
       if (sortBy === "priceHigh") {
-        return (b.price || 0) - (a.price || 0);
+        return (Number(b.Price) || 0) - (Number(a.Price) || 0);
       }
 
       // Default = newest
