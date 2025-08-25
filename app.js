@@ -579,6 +579,62 @@ app.get("/api/cities", async (req, res) => {
   }
 });
 
+// const districtSearchCounts = {};
+
+// app.get("/api/districts", async (req, res) => {
+//   try {
+//     const { REGION_ID, CITY_ID } = req.query;
+
+//     if (!REGION_ID && !CITY_ID) {
+//       return res
+//         .status(400)
+//         .json({ error: "At least REGION_ID or CITY_ID is required" });
+//     }
+
+//     const filePath = path.join(__dirname, "data", "Districts.json");
+//     const fileData = fs.readFileSync(filePath, "utf8");
+//     const jsonData = JSON.parse(fileData);
+
+//     const headers = jsonData[0];
+//     const rows = jsonData.slice(1);
+
+//     const filteredDistricts = rows
+//       .filter((row) => {
+//         const matchesRegion = REGION_ID ? row[0] === REGION_ID : false;
+//         const matchesCity = CITY_ID ? row[1] === CITY_ID : false;
+//         return matchesRegion || matchesCity;
+//       })
+//       .map((row) => {
+//         const district = {};
+//         headers.forEach((key, index) => {
+//           district[key] = row[index];
+//         });
+
+//         // ✅ Track searches (REGION_ID-CITY_ID-DISTRICT_ID key)
+//         const key = `${district.REGION_ID}-${district.CITY_ID}-${district.District_ID}`;
+//         districtSearchCounts[key] = (districtSearchCounts[key] || 0) + 1;
+
+//         return district;
+//       });
+
+//     // ✅ Sort by most searched
+//     filteredDistricts.sort((a, b) => {
+//       const countA =
+//         districtSearchCounts[`${a.REGION_ID}-${a.CITY_ID}-${a.District_ID}`] ||
+//         0;
+//       const countB =
+//         districtSearchCounts[`${b.REGION_ID}-${b.CITY_ID}-${b.District_ID}`] ||
+//         0;
+//       return countB - countA;
+//     });
+
+//     res.status(200).json({ districts: filteredDistricts });
+//   } catch (error) {
+//     console.error("Error reading Districts.json:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
 const districtSearchCounts = {};
 
 app.get("/api/districts", async (req, res) => {
@@ -591,6 +647,15 @@ app.get("/api/districts", async (req, res) => {
         .json({ error: "At least REGION_ID or CITY_ID is required" });
     }
 
+    // ✅ 1. Load Firestore counts
+    const firestoreCounts = {};
+    const snapshot = await getDocs(collection(db, "districtIdSortData"));
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      firestoreCounts[data.districtId] = data.count || 0;
+    });
+
+    // ✅ 2. Load Districts.json
     const filePath = path.join(__dirname, "data", "Districts.json");
     const fileData = fs.readFileSync(filePath, "utf8");
     const jsonData = JSON.parse(fileData);
@@ -598,6 +663,7 @@ app.get("/api/districts", async (req, res) => {
     const headers = jsonData[0];
     const rows = jsonData.slice(1);
 
+    // ✅ 3. Apply existing filters
     const filteredDistricts = rows
       .filter((row) => {
         const matchesRegion = REGION_ID ? row[0] === REGION_ID : false;
@@ -610,19 +676,24 @@ app.get("/api/districts", async (req, res) => {
           district[key] = row[index];
         });
 
-        // ✅ Track searches (REGION_ID-CITY_ID-DISTRICT_ID key)
+        // ✅ Merge Firestore count
+        district.count = firestoreCounts[district.District_ID] || 0;
+
+        // ✅ Still increment in-memory counter (legacy)
         const key = `${district.REGION_ID}-${district.CITY_ID}-${district.District_ID}`;
         districtSearchCounts[key] = (districtSearchCounts[key] || 0) + 1;
 
         return district;
       });
 
-    // ✅ Sort by most searched
+    // ✅ 4. Sort by highest count (Firestore first, fallback to in-memory)
     filteredDistricts.sort((a, b) => {
       const countA =
+        firestoreCounts[a.District_ID] ||
         districtSearchCounts[`${a.REGION_ID}-${a.CITY_ID}-${a.District_ID}`] ||
         0;
       const countB =
+        firestoreCounts[b.District_ID] ||
         districtSearchCounts[`${b.REGION_ID}-${b.CITY_ID}-${b.District_ID}`] ||
         0;
       return countB - countA;
@@ -630,11 +701,10 @@ app.get("/api/districts", async (req, res) => {
 
     res.status(200).json({ districts: filteredDistricts });
   } catch (error) {
-    console.error("Error reading Districts.json:", error);
+    console.error("❌ Error in /api/districts:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 app.get("/api/our-category-OurCategoryHealthCare", async (req, res) => {
   try {
     const snapshot = await db.collection("OurCategoryHealthCare").get();
