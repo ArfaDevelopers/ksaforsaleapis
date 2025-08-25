@@ -463,8 +463,56 @@ app.get("/TRAVEL", async (req, res) => {
     return res.status(500).json({ error: "Error fetching TRAVEL" });
   }
 });
-const searchCounts = {};
 
+// const searchCounts = {};
+// app.get("/api/cities", async (req, res) => {
+//   try {
+//     let regionIds = req.query.REGION_ID;
+
+//     if (!regionIds) {
+//       return res.status(400).json({ error: "REGION_ID is required" });
+//     }
+
+//     if (!Array.isArray(regionIds)) {
+//       regionIds = [regionIds];
+//     }
+
+//     const filePath = path.join(__dirname, "data", "City.json");
+//     const fileData = fs.readFileSync(filePath, "utf8");
+//     const jsonData = JSON.parse(fileData);
+
+//     const headers = jsonData[0];
+//     const rows = jsonData.slice(1);
+
+//     const filteredCities = rows
+//       .filter((row) => regionIds.includes(row[0]))
+//       .map((row) => {
+//         const city = {};
+//         headers.forEach((key, index) => {
+//           city[key] = row[index];
+//         });
+
+//         // ✅ Build key REGION_ID-CITY_ID
+//         const key = `${city.REGION_ID}-${city.CITY_ID}`;
+//         searchCounts[key] = (searchCounts[key] || 0) + 1;
+
+//         return city;
+//       });
+
+//     // ✅ Sort by most searched
+//     filteredCities.sort((a, b) => {
+//       const countA = searchCounts[`${a.REGION_ID}-${a.CITY_ID}`] || 0;
+//       const countB = searchCounts[`${b.REGION_ID}-${b.CITY_ID}`] || 0;
+//       return countB - countA; // descending
+//     });
+
+//     res.status(200).json({ cities: filteredCities });
+//   } catch (error) {
+//     console.error("Error reading City.json:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+const searchCounts = {};
 app.get("/api/cities", async (req, res) => {
   try {
     let regionIds = req.query.REGION_ID;
@@ -477,6 +525,7 @@ app.get("/api/cities", async (req, res) => {
       regionIds = [regionIds];
     }
 
+    // ✅ Read City.json
     const filePath = path.join(__dirname, "data", "City.json");
     const fileData = fs.readFileSync(filePath, "utf8");
     const jsonData = JSON.parse(fileData);
@@ -484,6 +533,13 @@ app.get("/api/cities", async (req, res) => {
     const headers = jsonData[0];
     const rows = jsonData.slice(1);
 
+    // ✅ Fetch Firestore counts
+    const citySnap = await db.collection("cityIdSortData").get();
+    const cityCountMap = new Map(
+      citySnap.docs.map((doc) => [String(doc.data().cityId), doc.data().count])
+    );
+
+    // ✅ Apply filters (unchanged)
     const filteredCities = rows
       .filter((row) => regionIds.includes(row[0]))
       .map((row) => {
@@ -492,59 +548,37 @@ app.get("/api/cities", async (req, res) => {
           city[key] = row[index];
         });
 
-        // ✅ Build key REGION_ID-CITY_ID
+        // ✅ Add Firestore count
+        city.count = cityCountMap.get(String(city.CITY_ID)) || 0;
+
+        // ✅ Still track searchCounts (your original logic)
         const key = `${city.REGION_ID}-${city.CITY_ID}`;
         searchCounts[key] = (searchCounts[key] || 0) + 1;
 
         return city;
       });
 
-    // ✅ Sort by most searched
+    // ✅ Sort by Firestore count, then by searchCounts
     filteredCities.sort((a, b) => {
-      const countA = searchCounts[`${a.REGION_ID}-${a.CITY_ID}`] || 0;
-      const countB = searchCounts[`${b.REGION_ID}-${b.CITY_ID}`] || 0;
-      return countB - countA; // descending
+      const countA = a.count || 0;
+      const countB = b.count || 0;
+
+      if (countA !== countB) {
+        return countB - countA; // Firestore counts first
+      }
+
+      const searchA = searchCounts[`${a.REGION_ID}-${a.CITY_ID}`] || 0;
+      const searchB = searchCounts[`${b.REGION_ID}-${b.CITY_ID}`] || 0;
+      return searchB - searchA; // fallback: most searched
     });
 
     res.status(200).json({ cities: filteredCities });
   } catch (error) {
-    console.error("Error reading City.json:", error);
+    console.error("Error in /api/cities:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// app.get("/api/cities", async (req, res) => {
-//   try {
-//     const { REGION_ID } = req.query;
-
-//     if (!REGION_ID) {
-//       return res.status(400).json({ error: "REGION_ID is required" });
-//     }
-
-//     const filePath = path.join(__dirname, "data", "City.json");
-//     const fileData = fs.readFileSync(filePath, "utf8");
-//     const jsonData = JSON.parse(fileData);
-
-//     const headers = jsonData[0];
-//     const rows = jsonData.slice(1);
-
-//     const filteredCities = rows
-//       .filter((row) => row[0] === REGION_ID) // row[0] is REGION_ID
-//       .map((row) => {
-//         const city = {};
-//         headers.forEach((key, index) => {
-//           city[key] = row[index];
-//         });
-//         return city;
-//       });
-
-//     res.status(200).json({ cities: filteredCities });
-//   } catch (error) {
-//     console.error("Error reading City.json:", error);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// });
-// ✅ Keep it outside so counts persist
 const districtSearchCounts = {};
 
 app.get("/api/districts", async (req, res) => {
