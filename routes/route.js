@@ -7,7 +7,7 @@ const twilio = require("twilio");
 const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid"); // For generating unique IDs
 const { error } = require("console");
-const FB = require("fb");
+// const FB = require("fb");
 
 const cors = require("cors");
 
