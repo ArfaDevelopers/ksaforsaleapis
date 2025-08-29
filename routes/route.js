@@ -1,3 +1,5 @@
+FB.options({ version: "v13.0" });
+
 const { db, admin } = require("../firebase/config");
 const express = require("express");
 const router = express.Router();
@@ -4226,7 +4228,6 @@ router.post("/verify-otp", async (req, res) => {
       .json({ success: false, message: "Error verifying OTP", error });
   }
 });
-FB.options({ version: "v13.0" });
 
 // Facebook share API
 router.post("/api/share/facebook", async (req, res) => {
