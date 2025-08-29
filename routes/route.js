@@ -4229,7 +4229,7 @@ router.post("/verify-otp", async (req, res) => {
 FB.options({ version: "v13.0" });
 
 // Facebook share API
-app.post("/api/share/facebook", async (req, res) => {
+router.post("/api/share/facebook", async (req, res) => {
   try {
     const { itemId, itemName, itemPrice, itemImage, itemUrl } = req.body;
 
