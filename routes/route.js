@@ -4229,15 +4229,12 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
-// Facebook share API
-router.post("/api/share/facebook", async (req, res) => {
+app.post("/api/share/facebook", async (req, res) => {
   try {
     const { itemId, itemName, itemPrice, itemImage, itemUrl } = req.body;
 
-    // Set access token
     FB.setAccessToken(process.env.FACEBOOK_ACCESS_TOKEN);
 
-    // Create post data
     const postData = {
       message: `Check out ${itemName} for $${itemPrice}`,
       picture: itemImage,
@@ -4249,13 +4246,14 @@ router.post("/api/share/facebook", async (req, res) => {
       },
     };
 
-    // Wrap FB.api in a Promise
     const response = await new Promise((resolve, reject) => {
-      FB.api("/me/feed", "post", postData, (res) => {
-        if (!res || res.error) {
-          return reject(res.error || new Error("Unknown Facebook API error"));
+      FB.api("/me/feed", "post", postData, (apiRes) => {
+        if (!apiRes || apiRes.error) {
+          return reject(
+            apiRes.error || new Error("Unknown Facebook API error")
+          );
         }
-        resolve(res);
+        resolve(apiRes);
       });
     });
 
