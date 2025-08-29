@@ -4228,7 +4228,7 @@ router.post("/verify-otp", async (req, res) => {
 });
 FB.options({ version: "v13.0" });
 
-// Add this route below your existing routes
+// Facebook share API
 app.post("/api/share/facebook", async (req, res) => {
   try {
     const { itemId, itemName, itemPrice, itemImage, itemUrl } = req.body;
@@ -4248,8 +4248,15 @@ app.post("/api/share/facebook", async (req, res) => {
       },
     };
 
-    // Post to Facebook
-    const response = await FB.api("/me/feed", "POST", postData);
+    // Wrap FB.api in a Promise
+    const response = await new Promise((resolve, reject) => {
+      FB.api("/me/feed", "post", postData, (res) => {
+        if (!res || res.error) {
+          return reject(res.error || new Error("Unknown Facebook API error"));
+        }
+        resolve(res);
+      });
+    });
 
     res.status(200).json({ success: true, postId: response.id });
   } catch (error) {
@@ -4261,4 +4268,5 @@ app.post("/api/share/facebook", async (req, res) => {
     });
   }
 });
+
 module.exports = router;
