@@ -1,4 +1,4 @@
-FB.options({ version: "v13.0" });
+// FB.options({ version: "v13.0" });
 
 const { db, admin } = require("../firebase/config");
 const express = require("express");
