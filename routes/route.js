@@ -1,5 +1,3 @@
-FB.options({ version: "v13.0" });
-
 const { db, admin } = require("../firebase/config");
 const express = require("express");
 const router = express.Router();
@@ -7,7 +5,6 @@ const twilio = require("twilio");
 const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid"); // For generating unique IDs
 const { error } = require("console");
-const FB = require("fb");
 
 const cors = require("cors");
 
@@ -117,6 +114,7 @@ io.on("connection", (socket) => {
     console.log("User disconnected");
   });
 });
+
 app.post("/call", async (req, res) => {
   const { to } = req.body;
 
@@ -4226,45 +4224,6 @@ router.post("/verify-otp", async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Error verifying OTP", error });
-  }
-});
-
-router.post("/api/share/facebook", async (req, res) => {
-  try {
-    const { itemId, itemName, itemPrice, itemImage, itemUrl } = req.body;
-
-    FB.setAccessToken(process.env.FACEBOOK_ACCESS_TOKEN);
-
-    const postData = {
-      message: `Check out ${itemName} for $${itemPrice}`,
-      picture: itemImage,
-      link: itemUrl,
-      name: itemName,
-      description: `Shared from our store`,
-      properties: {
-        Price: `$${itemPrice}`,
-      },
-    };
-
-    const response = await new Promise((resolve, reject) => {
-      FB.api("/me/feed", "post", postData, (apiRes) => {
-        if (!apiRes || apiRes.error) {
-          return reject(
-            apiRes.error || new Error("Unknown Facebook API error")
-          );
-        }
-        resolve(apiRes);
-      });
-    });
-
-    res.status(200).json({ success: true, postId: response.id });
-  } catch (error) {
-    console.error("Error posting to Facebook:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      facebookErrorCode: error.code,
-    });
   }
 });
 
