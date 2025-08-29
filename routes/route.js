@@ -147,41 +147,7 @@ app.get("/api/users", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-FB.options({ version: "v13.0" });
 
-// Add this route below your existing routes
-app.post("/api/share/facebook", async (req, res) => {
-  try {
-    const { itemId, itemName, itemPrice, itemImage, itemUrl } = req.body;
-
-    // Set access token
-    FB.setAccessToken(process.env.FACEBOOK_ACCESS_TOKEN);
-
-    // Create post data
-    const postData = {
-      message: `Check out ${itemName} for $${itemPrice}`,
-      picture: itemImage,
-      link: itemUrl,
-      name: itemName,
-      description: `Shared from our store`,
-      properties: {
-        Price: `$${itemPrice}`,
-      },
-    };
-
-    // Post to Facebook
-    const response = await FB.api("/me/feed", "POST", postData);
-
-    res.status(200).json({ success: true, postId: response.id });
-  } catch (error) {
-    console.error("Error posting to Facebook:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      facebookErrorCode: error.code,
-    });
-  }
-});
 // Get chats by user ID
 app.get("/api/chats/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -4260,5 +4226,39 @@ router.post("/verify-otp", async (req, res) => {
       .json({ success: false, message: "Error verifying OTP", error });
   }
 });
+FB.options({ version: "v13.0" });
 
+// Add this route below your existing routes
+app.post("/api/share/facebook", async (req, res) => {
+  try {
+    const { itemId, itemName, itemPrice, itemImage, itemUrl } = req.body;
+
+    // Set access token
+    FB.setAccessToken(process.env.FACEBOOK_ACCESS_TOKEN);
+
+    // Create post data
+    const postData = {
+      message: `Check out ${itemName} for $${itemPrice}`,
+      picture: itemImage,
+      link: itemUrl,
+      name: itemName,
+      description: `Shared from our store`,
+      properties: {
+        Price: `$${itemPrice}`,
+      },
+    };
+
+    // Post to Facebook
+    const response = await FB.api("/me/feed", "POST", postData);
+
+    res.status(200).json({ success: true, postId: response.id });
+  } catch (error) {
+    console.error("Error posting to Facebook:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      facebookErrorCode: error.code,
+    });
+  }
+});
 module.exports = router;
