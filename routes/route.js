@@ -4229,7 +4229,7 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
-app.post("/api/share/facebook", async (req, res) => {
+router.post("/api/share/facebook", async (req, res) => {
   try {
     const { itemId, itemName, itemPrice, itemImage, itemUrl } = req.body;
 
