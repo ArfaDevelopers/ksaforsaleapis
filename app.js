@@ -150,7 +150,7 @@ app.get("/search", async (req, res) => {
 
               if (
                 title.includes(normalizedQuery) ||
-                description.includes(normalizedQuery)
+                description.includes(normalizedQuery) 
               ) {
                 return {
                   id: doc.id,

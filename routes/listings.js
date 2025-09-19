@@ -105,4 +105,16 @@ router.get("/listings", async (req, res) => {
   }
 });
 
+router.get('/totalListings', async (req, res) => {
+  try {
+    const {userId} = req.query
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId in query params" });
+    }
+    
+  } catch (error) {
+    
+  }
+})
+
 module.exports = router;
